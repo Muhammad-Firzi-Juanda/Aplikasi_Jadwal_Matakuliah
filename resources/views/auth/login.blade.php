@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Jadwal Ku - Login | Universitas Maritim Raja Ali Haji')
+@section('title', 'SIWALAN - Login | Universitas Maritim Raja Ali Haji')
 
 @section('content')
 <!-- Success Toast Popup (Matching Image 2) -->
@@ -25,7 +25,7 @@
     <!-- Right Side: Content & Form -->
     <div class="login-right-content">
         <div class="login-form-wrapper">
-            <h1 class="app-title">Jadwal Ku</h1>
+            <h1 class="app-title">SIWALAN</h1>
 
             <form action="{{ route('login.submit') }}" method="POST" class="login-form">
                 @csrf
@@ -52,6 +52,12 @@
                             </svg>
                         </span>
                         <input type="password" id="password" name="password" required autocomplete="current-password">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility()">
+                            <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -76,4 +82,20 @@
     </div>
 </div>
 @endif
+
+<script>
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+    }
+}
+</script>
+
 @endsection

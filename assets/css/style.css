@@ -605,6 +605,9 @@ body {
 
 .modal-form-row .modal-input-container {
   flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .modal-form-row input,
@@ -618,6 +621,36 @@ body {
   outline: none;
   background: #ffffff;
   transition: var(--transition);
+}
+
+.modal-form-row input[type="password"],
+.modal-form-row input:has(+ .btn-toggle-password) {
+  padding-right: 44px;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: var(--transition);
+}
+
+.btn-toggle-password:hover {
+  color: #334155;
+}
+
+.btn-toggle-password svg {
+  width: 18px;
+  height: 18px;
 }
 
 .modal-form-row input:focus,

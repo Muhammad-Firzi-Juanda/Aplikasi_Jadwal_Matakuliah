@@ -12,9 +12,6 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    /**
-     * Show login form.
-     */
     public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -24,44 +21,21 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    /**
-     * Handle login authentication.
-     */
     public function login(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $email = trim($request->input('email', ''));
-        $password = $request->input('password', '');
+        $request->validate([
+            'email' => 'required|email|max:150',
+            'password' => 'required|string|min:1',
+        ], [
+            'email.required' => 'Email wajib diisi!',
+            'email.email' => 'Format email tidak valid!',
+            'password.required' => 'Password wajib diisi!',
+        ]);
 
-        if (empty($email) || empty($password)) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Email atau Password Anda Salah',
-                ], 422);
-            }
+        $email = trim($request->input('email'));
+        $password = $request->input('password');
 
-            return redirect()->route('login')
-                ->withInput($request->only('email'))
-                ->with('show_error', true);
-        }
-
-        $authenticated = false;
-
-        // Attempt normal authentication
         if (Auth::attempt(['email' => $email, 'password' => $password])) {
-            $authenticated = true;
-        } else {
-            // Fallback for legacy plain text passwords if any
-            $user = User::where('email', $email)->first();
-            if ($user && $user->password === $password) {
-                $user->password = $password; // Re-hash automatically via casts
-                $user->save();
-                Auth::login($user);
-                $authenticated = true;
-            }
-        }
-
-        if ($authenticated) {
             $request->session()->regenerate();
 
             if ($request->ajax() || $request->wantsJson()) {
@@ -87,9 +61,6 @@ class AuthController extends Controller
             ->with('show_error', true);
     }
 
-    /**
-     * Handle user logout.
-     */
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
@@ -99,61 +70,54 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
-    /**
-     * Handle change password for authenticated user.
-     */
     public function changePassword(Request $request): RedirectResponse
     {
         $request->validate([
             'password_lama' => 'required',
-            'password_baru' => 'required|min:6',
+            'password_baru' => 'required|min:12|confirmed',
         ], [
             'password_lama.required' => 'Password lama wajib diisi!',
             'password_baru.required' => 'Password baru wajib diisi!',
-            'password_baru.min' => 'Password baru minimal 6 karakter!',
+            'password_baru.min' => 'Password baru minimal 12 karakter!',
+            'password_baru.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
-        /** @var User $user */
         $user = Auth::user();
 
         if (!Hash::check($request->input('password_lama'), $user->password)) {
-            return redirect()->route('dashboard')->with('flash_error', 'Password lama yang Anda masukkan salah!');
+            return redirect()->back()->with('flash_error', 'Password lama yang Anda masukkan salah!');
         }
 
         $user->password = $request->input('password_baru');
         $user->save();
 
-        return redirect()->route('dashboard')->with('flash_success', 'Password berhasil diubah!');
+        return redirect()->back()->with('flash_success', 'Password berhasil diubah!');
     }
 
-    /**
-     * Handle edit profile (name, email, password) for authenticated user (e.g. Super Admin).
-     */
     public function updateProfile(Request $request): RedirectResponse
     {
-        /** @var User $user */
         $user = Auth::user();
 
         $request->validate([
             'nama' => 'required|string|max:100',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'password_lama' => 'nullable',
-            'password_baru' => 'nullable|min:6',
+            'password_baru' => 'nullable|min:12|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',
             'email.unique' => 'Email sudah digunakan oleh user lain!',
-            'password_baru.min' => 'Password baru minimal 6 karakter!',
+            'password_baru.min' => 'Password baru minimal 12 karakter!',
+            'password_baru.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
-        // If user provides new password
         if (!empty($request->input('password_baru'))) {
             if (empty($request->input('password_lama'))) {
-                return redirect()->route('dashboard')->with('flash_error', 'Password lama wajib diisi untuk mengubah password!');
+                return redirect()->back()->with('flash_error', 'Password lama wajib diisi untuk mengubah password!');
             }
 
             if (!Hash::check($request->input('password_lama'), $user->password)) {
-                return redirect()->route('dashboard')->with('flash_error', 'Password lama yang Anda masukkan salah!');
+                return redirect()->back()->with('flash_error', 'Password lama yang Anda masukkan salah!');
             }
 
             $user->password = $request->input('password_baru');
@@ -163,6 +127,6 @@ class AuthController extends Controller
         $user->email = trim($request->input('email'));
         $user->save();
 
-        return redirect()->route('dashboard')->with('flash_success', 'Profile berhasil diperbarui!');
+        return redirect()->back()->with('flash_success', 'Profile berhasil diperbarui!');
     }
 }

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nama', 100);
             $table->string('email', 150)->unique();
             $table->string('password');
-            $table->string('role', 50)->default('Jurusan');
+            $table->string('role', 50)->default('Jurusan')->index();
             $table->rememberToken();
             $table->timestamps();
         });
@@ -29,7 +29,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

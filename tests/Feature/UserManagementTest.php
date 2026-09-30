@@ -11,11 +11,18 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const ADMIN_EMAIL = 'admin@siwalan.com';
+    private const ADMIN_PASSWORD = 'admin123';
+
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed default users
         $this->seed();
+    }
+
+    private function admin(): User
+    {
+        return User::where('email', self::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_guest_is_redirected_to_login(): void
@@ -28,14 +35,14 @@ class UserManagementTest extends TestCase
     {
         $response = $this->get('/login');
         $response->assertStatus(200);
-        $response->assertSee('Jadwal Ku');
+        $response->assertSee('SIWALAN');
         $response->assertSee('Universitas Maritim');
     }
 
     public function test_login_fails_with_invalid_credentials(): void
     {
         $response = $this->post('/login', [
-            'email' => 'antony@gmail.com',
+            'email' => self::ADMIN_EMAIL,
             'password' => 'wrongpassword',
         ]);
 
@@ -47,8 +54,8 @@ class UserManagementTest extends TestCase
     public function test_login_succeeds_with_valid_credentials(): void
     {
         $response = $this->post('/login', [
-            'email' => 'antony@gmail.com',
-            'password' => 'admin123',
+            'email' => self::ADMIN_EMAIL,
+            'password' => self::ADMIN_PASSWORD,
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -58,8 +65,8 @@ class UserManagementTest extends TestCase
     public function test_login_ajax_succeeds_with_json_popup_response(): void
     {
         $response = $this->postJson('/login', [
-            'email' => 'antony@gmail.com',
-            'password' => 'admin123',
+            'email' => self::ADMIN_EMAIL,
+            'password' => self::ADMIN_PASSWORD,
         ]);
 
         $response->assertStatus(200);
@@ -74,7 +81,7 @@ class UserManagementTest extends TestCase
     public function test_login_ajax_fails_with_json_response(): void
     {
         $response = $this->postJson('/login', [
-            'email' => 'antony@gmail.com',
+            'email' => self::ADMIN_EMAIL,
             'password' => 'wrongpass',
         ]);
 
@@ -86,29 +93,37 @@ class UserManagementTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_dashboard_displays_users_for_authenticated_user(): void
+    public function test_manajemen_akun_displays_non_admin_users(): void
     {
-        $user = User::where('email', 'antony@gmail.com')->first();
+        $response = $this->actingAs($this->admin())->get('/manajemen-akun');
 
-        $response = $this->actingAs($user)->get('/dashboard');
         $response->assertStatus(200);
         $response->assertSee('Manajemen User');
         $response->assertSee('Revi Aedrian');
         $response->assertSee('Brian Darell');
-        // Super Admin is in header badge, but not in user management table
-        $response->assertSee('Super Admin,');
+        // Super Admin tidak muncul di tabel manajemen akun
         $response->assertDontSee('<td>Super Admin</td>', false);
+    }
+
+    public function test_dashboard_shows_sidebar_links_and_stats(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('Dashboard');
+        $response->assertSee(route('manajemen-akun'), false);
+        $response->assertSee(route('jadwal-kuliah.index'), false);
+        $response->assertSee(route('penjadwalan.index'), false);
     }
 
     public function test_create_user_successfully(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
-
-        $response = $this->actingAs($admin)->post('/users', [
+        $response = $this->actingAs($this->admin())->post('/users', [
             'nama' => 'Dosen Baru',
             'email' => 'dosenbaru@gmail.com',
             'role' => 'Jurusan',
             'password' => 'password123',
+            'password_confirmation' => 'password123',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -123,13 +138,12 @@ class UserManagementTest extends TestCase
 
     public function test_create_user_with_role_prodi(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
-
-        $response = $this->actingAs($admin)->post('/users', [
+        $response = $this->actingAs($this->admin())->post('/users', [
             'nama' => 'Kaprodi Baru',
             'email' => 'kaprodi@gmail.com',
             'role' => 'Prodi',
             'password' => 'password123',
+            'password_confirmation' => 'password123',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -142,16 +156,30 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_cannot_create_super_admin_from_crud(): void
+    {
+        $response = $this->actingAs($this->admin())->post('/users', [
+            'nama' => 'Hacker Super',
+            'email' => 'hack@gmail.com',
+            'role' => 'Super Admin',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrors('role');
+        $this->assertDatabaseMissing('users', ['email' => 'hack@gmail.com']);
+    }
+
     public function test_update_user_successfully(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
-        $target = User::where('email', 'randtian@gmail.com')->first();
+        $target = User::where('email', 'randtian@gmail.com')->firstOrFail();
 
-        $response = $this->actingAs($admin)->put("/users/{$target->id}", [
+        $response = $this->actingAs($this->admin())->put("/users/{$target->id}", [
             'nama' => 'Revi Aedrian Updated',
             'email' => 'randtian@gmail.com',
             'role' => 'Fakultas',
             'password' => '',
+            'password_confirmation' => '',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -166,21 +194,20 @@ class UserManagementTest extends TestCase
 
     public function test_prevent_self_deletion(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
+        $admin = $this->admin();
 
         $response = $this->actingAs($admin)->delete("/users/{$admin->id}");
 
         $response->assertRedirect('/dashboard');
-        $response->assertSessionHas('flash_error', 'Akun Super Admin tidak dapat dihapus!');
+        $response->assertSessionHas('flash_error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif!');
         $this->assertDatabaseHas('users', ['id' => $admin->id]);
     }
 
     public function test_delete_other_user(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
-        $target = User::where('email', 'bdarell@gmail.com')->first();
+        $target = User::where('email', 'bdarell@gmail.com')->firstOrFail();
 
-        $response = $this->actingAs($admin)->delete("/users/{$target->id}");
+        $response = $this->actingAs($this->admin())->delete("/users/{$target->id}");
 
         $response->assertRedirect('/dashboard');
         $response->assertSessionHas('flash_success', 'User berhasil dihapus!');
@@ -189,14 +216,14 @@ class UserManagementTest extends TestCase
 
     public function test_edit_profile_super_admin(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
+        $admin = $this->admin();
 
-        // Update name and email and password
         $response = $this->actingAs($admin)->post('/profile', [
             'nama' => 'Admin Utama',
             'email' => 'adminutama@gmail.com',
-            'password_lama' => 'admin123',
+            'password_lama' => self::ADMIN_PASSWORD,
             'password_baru' => 'newadminpassword123',
+            'password_baru_confirmation' => 'newadminpassword123',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -208,27 +235,35 @@ class UserManagementTest extends TestCase
         $this->assertTrue(Hash::check('newadminpassword123', $admin->password));
     }
 
-    public function test_cannot_create_super_admin_from_crud(): void
+    public function test_change_password(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
+        $admin = $this->admin();
 
-        $response = $this->actingAs($admin)->post('/users', [
-            'nama' => 'Hacker Super',
-            'email' => 'hack@gmail.com',
-            'role' => 'Super Admin',
-            'password' => 'password123',
+        $response = $this->actingAs($admin)->post('/change-password', [
+            'password_lama' => self::ADMIN_PASSWORD,
+            'password_baru' => 'password456',
+            'password_baru_confirmation' => 'password456',
         ]);
 
-        $response->assertSessionHasErrors('role');
-        $this->assertDatabaseMissing('users', ['email' => 'hack@gmail.com']);
+        $response->assertRedirect('/dashboard');
+        $response->assertSessionHas('flash_success', 'Password berhasil diubah!');
+
+        $this->assertTrue(Hash::check('password456', $admin->fresh()->password));
     }
 
     public function test_logout(): void
     {
-        $admin = User::where('email', 'antony@gmail.com')->first();
+        $response = $this->actingAs($this->admin())->post('/logout');
 
-        $response = $this->actingAs($admin)->post('/logout');
         $response->assertRedirect('/login');
         $this->assertGuest();
+    }
+
+    public function test_non_super_admin_cannot_access_admin_pages(): void
+    {
+        $user = User::where('email', 'bdarell@gmail.com')->firstOrFail();
+
+        $this->actingAs($user)->get('/jadwal-kuliah')->assertForbidden();
+        $this->actingAs($user)->get('/penjadwalan')->assertForbidden();
     }
 }
