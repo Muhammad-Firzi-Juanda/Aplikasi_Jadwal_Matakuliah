@@ -93,7 +93,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'password_lama' => 'required',
-            'password_baru' => 'required|min:12|confirmed',
+            'password_baru' => 'required|min:6|confirmed',
         ], [
             'password_lama.required' => 'Password lama wajib diisi!',
             'password_baru.required' => 'Password baru wajib diisi!',
@@ -121,7 +121,7 @@ class AuthController extends Controller
             'nama' => 'required|string|max:100',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'password_lama' => 'nullable',
-            'password_baru' => 'nullable|min:12|confirmed',
+            'password_baru' => 'nullable|min:6|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',

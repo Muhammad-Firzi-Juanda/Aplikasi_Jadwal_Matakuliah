@@ -45,7 +45,7 @@ class UserController extends Controller
             'nama' => 'required|string|max:100',
             'email' => 'required|email|max:150|unique:users,email',
             'role' => ['required', Rule::in(UserRole::nonAdmin())],
-            'password' => 'required|min:12|confirmed',
+            'password' => 'required|min:6|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',
@@ -77,7 +77,7 @@ class UserController extends Controller
             'nama' => 'required|string|max:100',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(UserRole::nonAdmin())],
-            'password' => 'nullable|min:12|confirmed',
+            'password' => 'nullable|min:6|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',

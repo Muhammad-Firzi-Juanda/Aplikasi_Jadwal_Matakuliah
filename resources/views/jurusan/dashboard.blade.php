@@ -11,7 +11,7 @@
                 <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Jurusan</span>
             </div>
             <nav class="sidebar-nav">
-                <a href="{{ route('jurusan.dashboard') }}" class="sidebar-link active">
+                <a href="#section-dashboard" class="sidebar-link active" onclick="showSection(event, 'section-dashboard', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -20,14 +20,14 @@
                     </svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="#section-dosen" class="sidebar-link" onclick="scrollToSection('section-dosen')">
+                <a href="#section-dosen" class="sidebar-link" onclick="showSection(event, 'section-dosen', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                     <span>Data Dosen</span>
                 </a>
-                <a href="#section-mk" class="sidebar-link" onclick="scrollToSection('section-mk')">
+                <a href="#section-mk" class="sidebar-link" onclick="showSection(event, 'section-mk', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 19.5h16M6.5 15.5l5-3 5 3m-10 0l5-3 5 3M12 12l-9-5h18l-9 5"></path>
                     </svg>
@@ -76,7 +76,7 @@
             <h1 class="page-title">Dashboard Jurusan</h1>
 
             {{-- Stats Cards --}}
-            <div class="stats-grid">
+            <div class="stats-grid content-section" id="section-dashboard">
                 <div class="stat-card">
                     <div class="stat-icon dosen-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -131,7 +131,7 @@
             </div>
 
             {{-- Data Dosen --}}
-            <div id="section-dosen" style="margin-top: 32px;">
+            <div id="section-dosen" class="content-section" style="margin-top: 32px; display: none;">
                 <div class="tab-header">
                     <h2>Data Dosen</h2>
                 </div>
@@ -162,7 +162,7 @@
             </div>
 
             {{-- Mata Kuliah per Semester --}}
-            <div id="section-mk" style="margin-top: 40px;">
+            <div id="section-mk" class="content-section" style="margin-top: 40px; display: none;">
                 <div class="tab-header">
                     <h2>Mata Kuliah per Semester</h2>
                 </div>
@@ -247,9 +247,28 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-function scrollToSection(id) {
-    event.preventDefault();
-    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+function showSection(event, id, element) {
+    if (event) event.preventDefault();
+    
+    document.querySelectorAll('.content-section').forEach(function(sec) {
+        sec.style.display = 'none';
+    });
+    
+    let target = document.getElementById(id);
+    if(target) {
+        if(target.classList.contains('stats-grid')) {
+            target.style.display = 'grid';
+        } else {
+            target.style.display = 'block';
+        }
+    }
+    
+    if (element) {
+        document.querySelectorAll('.sidebar-nav .sidebar-link').forEach(function(link) {
+            link.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
 }
 </script>
 @endsection

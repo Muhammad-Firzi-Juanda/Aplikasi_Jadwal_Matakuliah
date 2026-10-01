@@ -6,6 +6,7 @@ use App\Models\Prodi;
 use App\Models\Fakultas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProdiController extends Controller
 {
@@ -26,7 +27,8 @@ class ProdiController extends Controller
 
         Prodi::create($validated);
 
-        return redirect()->route('jadwal-kuliah.index')->with('flash_success', 'Program studi berhasil ditambahkan!');
+        $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+        return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil ditambahkan!');
     }
 
     public function update(Request $request, Prodi $prodi): RedirectResponse
@@ -46,7 +48,8 @@ class ProdiController extends Controller
 
         $prodi->update($validated);
 
-        return redirect()->route('jadwal-kuliah.index')->with('flash_success', 'Program studi berhasil diperbarui!');
+        $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+        return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil diperbarui!');
     }
 
     public function destroy(Request $request, ?Prodi $prodi = null): RedirectResponse
@@ -58,6 +61,7 @@ class ProdiController extends Controller
 
         $prodi->delete();
 
-        return redirect()->route('jadwal-kuliah.index')->with('flash_success', 'Program studi berhasil dihapus!');
+        $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+        return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil dihapus!');
     }
 }

@@ -18,11 +18,15 @@ class PenjadwalanController extends Controller
 
     public function index()
     {
-        $mataKuliah = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
+        $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
             ->orderBy('semester')
-            ->orderBy('kode_mk')
-            ->get()
-            ->groupBy('semester');
+            ->orderBy('kode_mk');
+            
+        if (auth()->user()->role === 'Fakultas') {
+            $query->where('tipe', 'Fakultas');
+        }
+
+        $mataKuliah = $query->get()->groupBy('semester');
 
         $jadwal = DB::table('jadwals')
             ->join('rombels', 'rombels.id', '=', 'jadwals.rombel_id')

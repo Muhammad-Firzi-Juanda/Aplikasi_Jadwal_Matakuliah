@@ -11,7 +11,7 @@
                 <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Prodi</span>
             </div>
             <nav class="sidebar-nav">
-                <a href="{{ route('prodi.dashboard') }}" class="sidebar-link active">
+                <a href="#section-dashboard" class="sidebar-link active" onclick="showSection(event, 'section-dashboard', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -20,7 +20,7 @@
                     </svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="#section-jadwal" class="sidebar-link" onclick="scrollToSection('section-jadwal')">
+                <a href="#section-jadwal" class="sidebar-link" onclick="showSection(event, 'section-jadwal', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"></rect>
                         <path d="M3 9h18M9 3v18"></path>
@@ -70,7 +70,7 @@
             <h1 class="page-title">Dashboard Prodi</h1>
 
             {{-- Stats Cards --}}
-            <div class="stats-grid">
+            <div class="stats-grid content-section" id="section-dashboard">
                 <div class="stat-card">
                     <div class="stat-icon kelas-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -125,7 +125,7 @@
             </div>
 
             {{-- Jadwal per Hari --}}
-            <div id="section-jadwal" style="margin-top: 32px;">
+            <div id="section-jadwal" class="content-section" style="margin-top: 32px; display: none;">
                 <div class="tab-header">
                     <h2>Jadwal Kuliah Aktif</h2>
                 </div>
@@ -232,9 +232,28 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-function scrollToSection(id) {
-    event.preventDefault();
-    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+function showSection(event, id, element) {
+    if (event) event.preventDefault();
+    
+    document.querySelectorAll('.content-section').forEach(function(sec) {
+        sec.style.display = 'none';
+    });
+    
+    let target = document.getElementById(id);
+    if(target) {
+        if(target.classList.contains('stats-grid')) {
+            target.style.display = 'grid';
+        } else {
+            target.style.display = 'block';
+        }
+    }
+    
+    if (element) {
+        document.querySelectorAll('.sidebar-nav .sidebar-link').forEach(function(link) {
+            link.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
 }
 
 function filterSemester(sem, btn) {

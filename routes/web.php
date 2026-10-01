@@ -40,6 +40,20 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+        Route::post('/fakultas', [\App\Http\Controllers\FakultasController::class, 'store'])->name('fakultas.store');
+        Route::put('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'update'])->name('fakultas.update');
+        Route::delete('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'destroy'])->name('fakultas.destroy');
+
+        Route::post('/mata-kuliah', [\App\Http\Controllers\MataKuliahController::class, 'store'])->name('mata-kuliah.store');
+        Route::put('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'update'])->name('mata-kuliah.update');
+        Route::delete('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
+    });
+
+    // Super Admin & Fakultas routes for Scheduling & Prodi management
+    Route::middleware('check_role:Super Admin,Fakultas')->group(function () {
+        Route::post('/prodi', [\App\Http\Controllers\ProdiController::class, 'store'])->name('prodi.store');
+        Route::put('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'update'])->name('prodi.update');
+        Route::delete('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'destroy'])->name('prodi.destroy');
         Route::get('/jadwal-kuliah', [\App\Http\Controllers\JadwalKuliahController::class, 'index'])->name('jadwal-kuliah.index');
 
         Route::get('/penjadwalan', [\App\Http\Controllers\PenjadwalanController::class, 'index'])->name('penjadwalan.index');
@@ -49,19 +63,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/penjadwalan/generate', [\App\Http\Controllers\PenjadwalanController::class, 'generate'])->name('penjadwalan.generate');
         Route::get('/penjadwalan/template', [\App\Http\Controllers\PenjadwalanController::class, 'downloadTemplate'])->name('penjadwalan.template');
         Route::post('/penjadwalan/import', [\App\Http\Controllers\PenjadwalanController::class, 'import'])->name('penjadwalan.import');
-
-        Route::post('/fakultas', [\App\Http\Controllers\FakultasController::class, 'store'])->name('fakultas.store');
-        Route::put('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'update'])->name('fakultas.update');
-        Route::delete('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'destroy'])->name('fakultas.destroy');
-
-        Route::post('/prodi', [\App\Http\Controllers\ProdiController::class, 'store'])->name('prodi.store');
-        Route::put('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'update'])->name('prodi.update');
-        Route::delete('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'destroy'])->name('prodi.destroy');
-
-        Route::post('/mata-kuliah', [\App\Http\Controllers\MataKuliahController::class, 'store'])->name('mata-kuliah.store');
-        Route::put('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'update'])->name('mata-kuliah.update');
-        Route::delete('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
     });
+
+
 
     // Admin Fakultas routes
     Route::middleware('check_role:Fakultas')->group(function () {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Prodi;
 use App\Models\Dosen;
+use App\Models\Fakultas;
 use App\Models\MataKuliahDetail;
 use App\Models\Jadwal;
 use Illuminate\View\View;
@@ -20,6 +21,7 @@ class FakultasDashboardController extends Controller
         ];
 
         $prodis   = Prodi::with('fakultas')->orderBy('nama')->get();
+        $fakultas = Fakultas::orderBy('nama')->get();
         $jadwals  = Jadwal::with(['rombel.mataKuliah', 'dosen', 'ruangan'])
                         ->where('is_active', true)
                         ->orderBy('hari')
@@ -27,6 +29,6 @@ class FakultasDashboardController extends Controller
                         ->get()
                         ->groupBy('hari');
 
-        return view('fakultas.dashboard', compact('stats', 'prodis', 'jadwals'));
+        return view('fakultas.dashboard', compact('stats', 'prodis', 'fakultas', 'jadwals'));
     }
 }
