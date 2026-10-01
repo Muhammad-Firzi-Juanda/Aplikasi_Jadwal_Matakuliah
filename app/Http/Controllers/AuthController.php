@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,10 +16,20 @@ class AuthController extends Controller
     public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return $this->redirectByRole(Auth::user());
         }
 
         return view('auth.login');
+    }
+
+    private function redirectByRole(User $user): RedirectResponse
+    {
+        return match ($user->role) {
+            UserRole::FAKULTAS => redirect()->route('fakultas.dashboard'),
+            UserRole::JURUSAN  => redirect()->route('jurusan.dashboard'),
+            UserRole::PRODI    => redirect()->route('prodi.dashboard'),
+            default            => redirect()->route('dashboard'),
+        };
     }
 
     public function login(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
@@ -37,16 +48,24 @@ class AuthController extends Controller
 
         if (Auth::attempt(['email' => $email, 'password' => $password])) {
             $request->session()->regenerate();
+            $user = Auth::user();
+
+            $redirectRoute = match ($user->role) {
+                UserRole::FAKULTAS => route('fakultas.dashboard'),
+                UserRole::JURUSAN  => route('jurusan.dashboard'),
+                UserRole::PRODI    => route('prodi.dashboard'),
+                default            => route('dashboard'),
+            };
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Login Berhasil',
-                    'redirect' => route('dashboard'),
+                    'success'  => true,
+                    'message'  => 'Login Berhasil',
+                    'redirect' => $redirectRoute,
                 ]);
             }
 
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended($redirectRoute);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
