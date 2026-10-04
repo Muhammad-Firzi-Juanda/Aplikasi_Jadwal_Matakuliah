@@ -409,7 +409,7 @@ body {
 }
 
 .admin-content {
-  padding: 24px 44px;
+  padding: 24px 24px;
   flex: 1;
 }
 
@@ -427,7 +427,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  max-width: 900px;
+  width: 100%;
 }
 
 .user-table {
@@ -742,7 +742,7 @@ body {
   padding: 12px 18px;
   border-radius: 8px;
   margin-bottom: 20px;
-  max-width: 900px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1121,5 +1121,123 @@ body {
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
+
+/* ==========================================================================
+   JURUSAN DASHBOARD - MATA KULIAH
+   ========================================================================== */
+.filter-select,
+.filter-input {
+  padding: 8px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  font-family: var(--font-sans);
+  transition: var(--transition);
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(8, 96, 190, 0.15);
+}
+
+.filter-input {
+  width: 220px;
+}
+
+.mk-semester-card {
+  margin-bottom: 20px;
+}
+
+.semester-header {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.semester-header h3 {
+  color: var(--gold-accent);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  font-family: var(--font-serif);
+}
+
+.semester-stats {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.badge-kode {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.badge-sks {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.badge-tipe {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.badge-tipe.wajib {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-tipe.pilihan {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-kelas {
+  background: var(--primary-blue);
+  color: #fff;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: inline-block;
+}
+
+.no-result {
+  text-align: center;
+  padding: 24px;
+  color: #64748b;
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
 }
 

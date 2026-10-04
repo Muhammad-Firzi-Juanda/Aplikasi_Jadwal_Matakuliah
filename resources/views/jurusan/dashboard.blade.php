@@ -163,40 +163,64 @@
 
             {{-- Mata Kuliah per Semester --}}
             <div id="section-mk" class="content-section" style="margin-top: 40px; display: none;">
-                <div class="tab-header">
+                <div class="tab-header" style="flex-wrap:wrap; gap:12px;">
                     <h2>Mata Kuliah per Semester</h2>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <select id="filterSemester" onchange="filterMk()" class="filter-select">
+                            <option value="">Semua Semester</option>
+                            @foreach($mataKuliahs->keys()->sort() as $smt)
+                                <option value="{{ $smt }}">Semester {{ $smt }}</option>
+                            @endforeach
+                        </select>
+                        <select id="filterTipe" onchange="filterMk()" class="filter-select">
+                            <option value="">Semua Tipe</option>
+                            <option value="Wajib">Wajib</option>
+                            <option value="Pilihan">Pilihan</option>
+                        </select>
+                        <input type="text" id="searchMk" placeholder="Cari kode / nama MK..." oninput="filterMk()" class="filter-input">
+                    </div>
                 </div>
                 @forelse ($mataKuliahs as $semester => $listMk)
-                    <h3 style="margin: 18px 0 8px; font-size:15px; color:#1e3a5f;">Semester {{ $semester }}</h3>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Kode MK</th>
-                                <th>Nama Mata Kuliah</th>
-                                <th>SKS</th>
-                                <th>Tipe</th>
-                                <th>Dosen Ketua</th>
-                                <th>Dosen Anggota</th>
-                                <th>Jumlah Kelas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($listMk as $mk)
+                    <div class="mk-semester-card table-card" data-semester="{{ $semester }}">
+                        <div class="semester-header">
+                            <h3>Semester {{ $semester }}</h3>
+                            <span class="semester-stats">{{ $listMk->count() }} MK &middot; {{ $listMk->sum('sks') }} SKS &middot; {{ $listMk->sum('jumlah_kelas') }} kelas</span>
+                        </div>
+                        <div class="table-responsive">
+                        <table class="data-table mk-table">
+                            <thead>
                                 <tr>
-                                    <td><strong>{{ $mk->kode_mk }}</strong></td>
-                                    <td>{{ $mk->nama_mk }}</td>
-                                    <td>{{ $mk->sks }}</td>
-                                    <td>{{ $mk->tipe }}</td>
-                                    <td>{{ $mk->dosenKetua->nama ?? '-' }}</td>
-                                    <td>{{ $mk->dosenAnggota->nama ?? '-' }}</td>
-                                    <td>{{ $mk->jumlah_kelas }}</td>
+                                    <th style="white-space:nowrap;">Kode MK</th>
+                                    <th>Nama Mata Kuliah</th>
+                                    <th style="text-align:center;">SKS</th>
+                                    <th style="text-align:center;">Tipe</th>
+                                    <th>Dosen Ketua</th>
+                                    <th>Dosen Anggota</th>
+                                    <th style="text-align:center;">Kelas</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($listMk as $mk)
+                                    <tr data-tipe="{{ $mk->tipe }}" data-kode="{{ strtolower($mk->kode_mk) }}" data-nama="{{ strtolower($mk->nama_mk) }}">
+                                        <td><span class="badge-kode">{{ $mk->kode_mk }}</span></td>
+                                        <td style="font-weight:600; color:#0f172a;">{{ $mk->nama_mk }}</td>
+                                        <td style="text-align:center;"><span class="badge-sks">{{ $mk->sks }} SKS</span></td>
+                                        <td style="text-align:center;"><span class="badge-tipe {{ strtolower($mk->tipe) }}">{{ $mk->tipe }}</span></td>
+                                        <td>{{ $mk->dosenKetua->nama ?? '-' }}</td>
+                                        <td>{{ $mk->dosenAnggota->nama ?? '-' }}</td>
+                                        <td style="text-align:center;"><span class="badge-kelas">{{ $mk->jumlah_kelas }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
                 @empty
-                    <p style="color:#666; padding:18px 0;">Belum ada data mata kuliah.</p>
+                    <div class="table-card" style="text-align:center; padding:40px 20px; border-style:dashed; border-color:#cbd5e1;">
+                        <p style="font-size:15px; color:#64748b;">Belum ada data mata kuliah.</p>
+                    </div>
                 @endforelse
+                <p id="mkNoResult" class="no-result" style="display:none;">Tidak ada mata kuliah sesuai filter.</p>
             </div>
         </section>
     </main>
@@ -249,26 +273,36 @@ function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function showSection(event, id, element) {
     if (event) event.preventDefault();
-    
-    document.querySelectorAll('.content-section').forEach(function(sec) {
-        sec.style.display = 'none';
-    });
-    
+    document.querySelectorAll('.content-section').forEach(function(sec) { sec.style.display = 'none'; });
     let target = document.getElementById(id);
-    if(target) {
-        if(target.classList.contains('stats-grid')) {
-            target.style.display = 'grid';
-        } else {
-            target.style.display = 'block';
-        }
-    }
-    
+    if(target) target.style.display = target.classList.contains('stats-grid') ? 'grid' : 'block';
     if (element) {
-        document.querySelectorAll('.sidebar-nav .sidebar-link').forEach(function(link) {
-            link.classList.remove('active');
-        });
+        document.querySelectorAll('.sidebar-nav .sidebar-link').forEach(function(link) { link.classList.remove('active'); });
         element.classList.add('active');
     }
+}
+function filterMk() {
+    let smt = document.getElementById('filterSemester').value;
+    let tipe = document.getElementById('filterTipe').value;
+    let q = document.getElementById('searchMk').value.toLowerCase().trim();
+    let visibleCards = 0;
+    document.querySelectorAll('.mk-semester-card').forEach(function(card) {
+        let cardSmt = card.dataset.semester;
+        let matchSmt = !smt || cardSmt === smt;
+        let rows = card.querySelectorAll('tbody tr');
+        let visibleRows = 0;
+        rows.forEach(function(tr) {
+            let matchTipe = !tipe || tr.dataset.tipe === tipe;
+            let matchSearch = !q || tr.dataset.kode.includes(q) || tr.dataset.nama.includes(q);
+            let show = matchTipe && matchSearch;
+            tr.style.display = show ? '' : 'none';
+            if(show) visibleRows++;
+        });
+        let showCard = matchSmt && visibleRows > 0;
+        card.style.display = showCard ? '' : 'none';
+        if(showCard) visibleCards++;
+    });
+    document.getElementById('mkNoResult').style.display = visibleCards === 0 ? 'block' : 'none';
 }
 </script>
 @endsection
