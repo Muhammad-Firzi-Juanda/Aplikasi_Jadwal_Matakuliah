@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
@@ -20,6 +21,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'prodi_id',
     ];
 
     /**
@@ -50,5 +52,13 @@ class User extends Authenticatable
     public function getNameAttribute(): ?string
     {
         return $this->nama;
+    }
+
+    /**
+     * Get the prodi associated with the user.
+     */
+    public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(Prodi::class);
     }
 }

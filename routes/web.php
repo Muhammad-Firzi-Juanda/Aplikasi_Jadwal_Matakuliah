@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\FakultasDashboardController;
 use App\Http\Controllers\JurusanDashboardController;
 use App\Http\Controllers\ProdiDashboardController;
+use App\Http\Controllers\ProdiManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -80,6 +81,7 @@ Route::middleware('auth')->group(function () {
     // Admin Prodi routes
     Route::middleware('check_role:Prodi')->group(function () {
         Route::get('/prodi/dashboard', [ProdiDashboardController::class, 'index'])->name('prodi.dashboard');
+        Route::post('/prodi/jadwal', [ProdiManagementController::class, 'storeJadwal'])->name('prodi.jadwal.store');
     });
 });
 
