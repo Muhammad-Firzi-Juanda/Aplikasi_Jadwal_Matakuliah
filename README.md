@@ -1,4 +1,4 @@
-﻿# Audit Aplikasi
+# Audit Aplikasi
 
 ## 1. Informasi Project
 - **Framework:** Laravel 11/13.x (berdasarkan composer.json laravel/framework ^13.17)
@@ -140,3 +140,8 @@ Terdapat file sampah atau non-standard seperti _legacy_native/ dan file PHP di r
 
 ## 30. Kesimpulan Audit
 Aplikasi Jadwal Mata Kuliah ini terstruktur dengan sangat baik, menggunakan standar Laravel 11/13 yang modern. Fungsionalitas inti telah diimplementasikan dengan baik mulai dari authentication, manajemen jadwal, hingga pengelolaan master data berbasis peran. Kualitas kode sangat baik, namun perlu memperhatikan project hygiene (file-file legacy).
+
+## 31. Log Update Terbaru (4 Oktober 2026)
+- **UI/UX:** Pembaruan tampilan dashboard Jurusan dan Prodi serta penyesuaian style CSS (`style.css`).
+- **Database & Model:** Penambahan relasi `prodi_id` pada model `User` beserta file migration.
+- **Controller:** Penambahan `ProdiManagementController` untuk pengelolaan khusus prodi.
