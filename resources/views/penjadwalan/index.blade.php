@@ -605,6 +605,12 @@
                         <input type="password" id="profile_password_baru" name="password_baru" placeholder="Kosongkan jika tidak diubah">
                     </div>
                 </div>
+                <div class="modal-form-row">
+                    <label for="profile_password_baru_confirmation">Konfirmasi Password Baru</label>
+                    <div class="modal-input-container">
+                        <input type="password" id="profile_password_baru_confirmation" name="password_baru_confirmation" placeholder="Ulangi password baru">
+                    </div>
+                </div>
                 <div class="modal-footer-buttons">
                     <button type="button" class="btn-modal-cancel" onclick="closeModal('modalEditProfile')">Batal</button>
                     <button type="submit" class="btn-modal-submit">Simpan</button>

@@ -269,7 +269,9 @@
                     <label for="edit_role">Role</label>
                     <div class="modal-input-container">
                         <select id="edit_role" name="role" required>
-                            <option value="Admin">Admin</option>
+                            @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
+                                <option value="Admin">Admin</option>
+                            @endif
                             <option value="Fakultas">Fakultas</option>
                             <option value="Jurusan">Jurusan</option>
                             <option value="Prodi">Prodi</option>
@@ -392,6 +394,11 @@ function closeModal(modalId) {
 }
 
 function openEditModal(userData) {
+    if ("{{ Auth::user()->role }}" === "Admin" && userData.id == {{ Auth::id() }}) {
+        alert("Admin tidak dapat mengedit akun sendiri melalui tabel. Silakan gunakan menu Edit Profile di sidebar.");
+        return;
+    }
+
     const form = document.getElementById('formEditUser');
     const baseUrl = form.getAttribute('data-base-url');
     form.action = baseUrl + '/' + userData.id;

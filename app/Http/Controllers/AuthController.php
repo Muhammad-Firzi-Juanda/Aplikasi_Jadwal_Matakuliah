@@ -100,7 +100,7 @@ class AuthController extends Controller
         ], [
             'password_lama.required' => 'Password lama wajib diisi!',
             'password_baru.required' => 'Password baru wajib diisi!',
-            'password_baru.min' => 'Password baru minimal 12 karakter!',
+            'password_baru.min' => 'Password baru minimal 6 karakter!',
             'password_baru.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
@@ -129,7 +129,7 @@ class AuthController extends Controller
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',
             'email.unique' => 'Email sudah digunakan oleh user lain!',
-            'password_baru.min' => 'Password baru minimal 12 karakter!',
+            'password_baru.min' => 'Password baru minimal 6 karakter!',
             'password_baru.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 

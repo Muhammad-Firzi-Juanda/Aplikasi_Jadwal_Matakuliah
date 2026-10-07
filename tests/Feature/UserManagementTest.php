@@ -390,4 +390,57 @@ class UserManagementTest extends TestCase
         $this->actingAs($user)->get('/jadwal-kuliah')->assertForbidden();
         $this->actingAs($user)->get('/penjadwalan')->assertForbidden();
     }
+
+    public function test_admin_cannot_edit_own_account_in_users_table(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        $response = $this->actingAs($adminAkun)->put("/users/{$adminAkun->id}", [
+            'nama' => 'Admin Berubah',
+            'email' => $adminAkun->email,
+            'role' => UserRole::ADMIN,
+            'password' => '',
+            'password_confirmation' => '',
+        ]);
+
+        $response->assertSessionHas('flash_error', 'Admin tidak dapat mengubah akun sendiri melalui tabel. Silakan gunakan menu Edit Profile.');
+        $this->assertDatabaseMissing('users', ['nama' => 'Admin Berubah']);
+    }
+
+    public function test_admin_can_update_own_account_via_edit_profile(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        $response = $this->actingAs($adminAkun)->post('/profile', [
+            'nama' => 'Admin Pembantu Updated',
+            'email' => 'admin_baru@apjad.com',
+            'password_lama' => 'admin123',
+            'password_baru' => 'newpassword123',
+            'password_baru_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertSessionHas('flash_success', 'Profile berhasil diperbarui!');
+        $this->assertDatabaseHas('users', [
+            'id' => $adminAkun->id,
+            'nama' => 'Admin Pembantu Updated',
+            'email' => 'admin_baru@apjad.com',
+        ]);
+        $this->assertTrue(Hash::check('newpassword123', $adminAkun->fresh()->password));
+    }
+
+    public function test_admin_does_not_see_own_account_in_table(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        // Saat Admin membuka manajemen akun, akun Admin sendiri tidak muncul di tabel
+        $response = $this->actingAs($adminAkun)->get('/manajemen-akun');
+        $response->assertStatus(200);
+        $response->assertSee('Revi Aedrian');
+        $response->assertDontSee("<td>{$adminAkun->email}</td>", false);
+
+        // Super Admin tetap melihat akun Admin di tabel
+        $superAdminResponse = $this->actingAs($this->admin())->get('/manajemen-akun');
+        $superAdminResponse->assertStatus(200);
+        $superAdminResponse->assertSee("<td>{$adminAkun->email}</td>", false);
+    }
 }

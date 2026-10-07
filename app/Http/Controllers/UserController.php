@@ -39,7 +39,13 @@ class UserController extends Controller
 
     public function manajemenAkun(): View
     {
-        $users = User::where('role', '!=', UserRole::SUPER_ADMIN)->orderBy('id', 'asc')->get();
+        $query = User::where('role', '!=', UserRole::SUPER_ADMIN);
+
+        if (Auth::user()->role === UserRole::ADMIN) {
+            $query->where('role', '!=', UserRole::ADMIN);
+        }
+
+        $users = $query->orderBy('id', 'asc')->get();
 
         return view('admin.manajemen-akun', compact('users'));
     }
@@ -57,7 +63,7 @@ class UserController extends Controller
             'email.unique' => 'Email sudah terdaftar!',
             'role.required' => 'Role wajib dipilih!',
             'password.required' => 'Password wajib diisi!',
-            'password.min' => 'Password minimal 12 karakter!',
+            'password.min' => 'Password minimal 6 karakter!',
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
@@ -86,6 +92,14 @@ class UserController extends Controller
             return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Akun Super Admin tidak dapat diubah!');
         }
 
+        if (Auth::user()->role === UserRole::ADMIN && $user->id === Auth::id()) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Admin tidak dapat mengubah akun sendiri melalui tabel. Silakan gunakan menu Edit Profile.');
+        }
+
+        if ($user->role === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat mengubah akun Admin!');
+        }
+
         $validated = $request->validate([
             'nama' => 'required|string|max:100',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
@@ -96,16 +110,12 @@ class UserController extends Controller
             'email.required' => 'Email wajib diisi!',
             'email.unique' => 'Email sudah digunakan oleh user lain!',
             'role.required' => 'Role wajib dipilih!',
-            'password.min' => 'Password minimal 12 karakter!',
+            'password.min' => 'Password minimal 6 karakter!',
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
         if ($validated['role'] === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN && $user->role !== UserRole::ADMIN) {
             return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat menetapkan role Admin!');
-        }
-
-        if ($user->role === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN && Auth::id() !== $user->id) {
-            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat mengubah akun Admin lain!');
         }
 
         $user->nama = trim($validated['nama']);
