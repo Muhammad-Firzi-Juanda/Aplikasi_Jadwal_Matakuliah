@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Dosen;
 use App\Models\MataKuliahDetail;
-use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -41,7 +40,7 @@ class MataKuliahImportService
 
     public function templatePath(): string
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('mata_kuliah');
 
@@ -113,7 +112,7 @@ class MataKuliahImportService
         $headerMap = $this->mapHeaders(array_shift($rows));
         $missing = array_diff(['kode_mk', 'nama_mk', 'sks', 'semester', 'tipe', 'prodi'], array_keys($headerMap));
 
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             return $this->result(0, 0, [], [
                 'Header wajib hilang: '.implode(', ', $missing).'. Unduh template untuk contoh.',
             ]);
@@ -135,25 +134,29 @@ class MataKuliahImportService
             $seen[$data['kode_mk'] ?? ''] = $line;
 
             $errors = $this->validateRow($data);
-            if (!empty($errors)) {
+            if (! empty($errors)) {
                 $failed[] = 'Baris '.$line.': '.implode(' ', $errors);
+
                 continue;
             }
 
             $dosenKetuaId = $this->resolveDosen($data['dosen_ketua'] ?? null, $data['prodi']);
-            if (($data['dosen_ketua'] ?? null) && !$dosenKetuaId) {
+            if (($data['dosen_ketua'] ?? null) && ! $dosenKetuaId) {
                 $failed[] = 'Baris '.$line.': dosen ketua "'.$data['dosen_ketua'].'" tidak ditemukan dan gagal dibuat.';
+
                 continue;
             }
 
             $dosenAnggotaId = $this->resolveDosen($data['dosen_anggota'] ?? null, $data['prodi']);
-            if (($data['dosen_anggota'] ?? null) && !$dosenAnggotaId) {
+            if (($data['dosen_anggota'] ?? null) && ! $dosenAnggotaId) {
                 $failed[] = 'Baris '.$line.': dosen anggota "'.$data['dosen_anggota'].'" tidak ditemukan dan gagal dibuat.';
+
                 continue;
             }
 
             if ($dosenKetuaId && $dosenKetuaId === $dosenAnggotaId) {
                 $failed[] = 'Baris '.$line.': dosen anggota harus berbeda dari dosen ketua.';
+
                 continue;
             }
 
@@ -245,15 +248,15 @@ class MataKuliahImportService
             $errors[] = 'nama_mk wajib diisi.';
         }
 
-        if (!is_numeric($data['sks'] ?? null) || (int) $data['sks'] < 1 || (int) $data['sks'] > 4) {
+        if (! is_numeric($data['sks'] ?? null) || (int) $data['sks'] < 1 || (int) $data['sks'] > 4) {
             $errors[] = 'sks harus 1-4.';
         }
 
-        if (!in_array((int) ($data['semester'] ?? 0), [1, 3, 5, 7], true)) {
+        if (! in_array((int) ($data['semester'] ?? 0), [1, 3, 5, 7], true)) {
             $errors[] = 'semester harus 1, 3, 5, atau 7.';
         }
 
-        if (!in_array($data['tipe'] ?? null, ['Wajib', 'Pilihan'], true)) {
+        if (! in_array($data['tipe'] ?? null, ['Wajib', 'Pilihan'], true)) {
             $errors[] = 'tipe harus Wajib atau Pilihan.';
         }
 

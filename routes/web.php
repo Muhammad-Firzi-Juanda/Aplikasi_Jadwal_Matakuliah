@@ -1,11 +1,17 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\FakultasController;
 use App\Http\Controllers\FakultasDashboardController;
+use App\Http\Controllers\JadwalKuliahController;
 use App\Http\Controllers\JurusanDashboardController;
+use App\Http\Controllers\MataKuliahController;
+use App\Http\Controllers\PenjadwalanController;
+use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\ProdiDashboardController;
 use App\Http\Controllers\ProdiManagementController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,8 +20,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Root route redirects to dashboard
+// Root route redirects to dashboard or role landing
 Route::get('/', function () {
+    if (Auth::check()) {
+        return match (Auth::user()->role) {
+            UserRole::ADMIN => redirect()->route('manajemen-akun'),
+            UserRole::FAKULTAS => redirect()->route('fakultas.dashboard'),
+            UserRole::JURUSAN => redirect()->route('jurusan.dashboard'),
+            UserRole::PRODI => redirect()->route('prodi.dashboard'),
+            default => redirect()->route('dashboard'),
+        };
+    }
+
     return redirect()->route('dashboard');
 });
 
@@ -32,41 +48,42 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout.get');
 
-    // Super Admin routes
-    Route::middleware('super_admin')->group(function () {
-        Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
+    // User Management (CRUD akun) routes for Super Admin & Admin
+    Route::middleware('check_role:Super Admin,Admin')->group(function () {
         Route::get('/manajemen-akun', [UserController::class, 'manajemenAkun'])->name('manajemen-akun');
-
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
 
-        Route::post('/fakultas', [\App\Http\Controllers\FakultasController::class, 'store'])->name('fakultas.store');
-        Route::put('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'update'])->name('fakultas.update');
-        Route::delete('/fakultas/{fakultas}', [\App\Http\Controllers\FakultasController::class, 'destroy'])->name('fakultas.destroy');
+    // Super Admin exclusive routes
+    Route::middleware('super_admin')->group(function () {
+        Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
 
-        Route::post('/mata-kuliah', [\App\Http\Controllers\MataKuliahController::class, 'store'])->name('mata-kuliah.store');
-        Route::put('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'update'])->name('mata-kuliah.update');
-        Route::delete('/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
+        Route::post('/fakultas', [FakultasController::class, 'store'])->name('fakultas.store');
+        Route::put('/fakultas/{fakultas}', [FakultasController::class, 'update'])->name('fakultas.update');
+        Route::delete('/fakultas/{fakultas}', [FakultasController::class, 'destroy'])->name('fakultas.destroy');
+
+        Route::post('/mata-kuliah', [MataKuliahController::class, 'store'])->name('mata-kuliah.store');
+        Route::put('/mata-kuliah/{mataKuliah}', [MataKuliahController::class, 'update'])->name('mata-kuliah.update');
+        Route::delete('/mata-kuliah/{mataKuliah}', [MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
     });
 
     // Super Admin & Fakultas routes for Scheduling & Prodi management
     Route::middleware('check_role:Super Admin,Fakultas')->group(function () {
-        Route::post('/prodi', [\App\Http\Controllers\ProdiController::class, 'store'])->name('prodi.store');
-        Route::put('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'update'])->name('prodi.update');
-        Route::delete('/prodi/{prodi}', [\App\Http\Controllers\ProdiController::class, 'destroy'])->name('prodi.destroy');
-        Route::get('/jadwal-kuliah', [\App\Http\Controllers\JadwalKuliahController::class, 'index'])->name('jadwal-kuliah.index');
+        Route::post('/prodi', [ProdiController::class, 'store'])->name('prodi.store');
+        Route::put('/prodi/{prodi}', [ProdiController::class, 'update'])->name('prodi.update');
+        Route::delete('/prodi/{prodi}', [ProdiController::class, 'destroy'])->name('prodi.destroy');
+        Route::get('/jadwal-kuliah', [JadwalKuliahController::class, 'index'])->name('jadwal-kuliah.index');
 
-        Route::get('/penjadwalan', [\App\Http\Controllers\PenjadwalanController::class, 'index'])->name('penjadwalan.index');
-        Route::post('/penjadwalan/mata-kuliah', [\App\Http\Controllers\PenjadwalanController::class, 'store'])->name('penjadwalan.store');
-        Route::put('/penjadwalan/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\PenjadwalanController::class, 'update'])->name('penjadwalan.update');
-        Route::delete('/penjadwalan/mata-kuliah/{mataKuliah}', [\App\Http\Controllers\PenjadwalanController::class, 'destroy'])->name('penjadwalan.destroy');
-        Route::post('/penjadwalan/generate', [\App\Http\Controllers\PenjadwalanController::class, 'generate'])->name('penjadwalan.generate');
-        Route::get('/penjadwalan/template', [\App\Http\Controllers\PenjadwalanController::class, 'downloadTemplate'])->name('penjadwalan.template');
-        Route::post('/penjadwalan/import', [\App\Http\Controllers\PenjadwalanController::class, 'import'])->name('penjadwalan.import');
+        Route::get('/penjadwalan', [PenjadwalanController::class, 'index'])->name('penjadwalan.index');
+        Route::post('/penjadwalan/mata-kuliah', [PenjadwalanController::class, 'store'])->name('penjadwalan.store');
+        Route::put('/penjadwalan/mata-kuliah/{mataKuliah}', [PenjadwalanController::class, 'update'])->name('penjadwalan.update');
+        Route::delete('/penjadwalan/mata-kuliah/{mataKuliah}', [PenjadwalanController::class, 'destroy'])->name('penjadwalan.destroy');
+        Route::post('/penjadwalan/generate', [PenjadwalanController::class, 'generate'])->name('penjadwalan.generate');
+        Route::get('/penjadwalan/template', [PenjadwalanController::class, 'downloadTemplate'])->name('penjadwalan.template');
+        Route::post('/penjadwalan/import', [PenjadwalanController::class, 'import'])->name('penjadwalan.import');
     });
-
-
 
     // Admin Fakultas routes
     Route::middleware('check_role:Fakultas')->group(function () {
@@ -84,4 +101,3 @@ Route::middleware('auth')->group(function () {
         Route::post('/prodi/jadwal', [ProdiManagementController::class, 'storeJadwal'])->name('prodi.jadwal.store');
     });
 });
-

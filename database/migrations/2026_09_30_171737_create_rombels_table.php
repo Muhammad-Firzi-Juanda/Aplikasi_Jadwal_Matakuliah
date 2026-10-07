@@ -22,7 +22,7 @@ return new class extends Migration
             $table->enum('peran_dosen', ['Ketua', 'Anggota']);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->unique(['mata_kuliah_detail_id', 'nomor_rombel']);
         });
     }

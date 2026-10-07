@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'SIWALAN - Dashboard Prodi')
+@section('title', 'APJAD - Dashboard Prodi')
 
 @section('content')
 <div class="admin-layout">
     <aside class="admin-sidebar">
         <div class="sidebar-top">
             <div class="sidebar-brand">
-                <h2>SIWALAN</h2>
+                <h2>APJAD</h2>
                 <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Prodi</span>
             </div>
             <nav class="sidebar-nav">

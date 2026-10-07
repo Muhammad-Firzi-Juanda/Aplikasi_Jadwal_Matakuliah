@@ -32,10 +32,13 @@ class SchedulerService
     public const MAKS_PILIHAN = 2;
 
     protected array $hariTersedia = [];
+
     protected array $slotMulaiTersedia = [];
 
     protected array $log = [];
+
     protected array $peringatan = [];
+
     protected array $slotPilihan = [];
 
     /** @var array<int,array{hari:string,ruangan_id:int,mulai:int,selesai:int}> */
@@ -87,14 +90,15 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Penempatan wajib                                                     */
+    /* Penempatan wajib */
     /* ------------------------------------------------------------------ */
 
     protected function tempatkan(MataKuliahDetail $mk, string $cohort): void
     {
         $slot = $this->cariSlot($mk, $cohort);
-        if (!$slot) {
+        if (! $slot) {
             $this->log[] = "GAGAL  {$mk->kode_mk} - {$mk->nama_mk}: tidak ada slot yang memenuhi syarat (ruangan/dosen).";
+
             return;
         }
 
@@ -110,10 +114,14 @@ class SchedulerService
 
         while ($terpasang < $total) {
             $ruangan = $this->cariRuangan($mk, $slot);
-            if (!$ruangan) break;
+            if (! $ruangan) {
+                break;
+            }
 
             $dosen = $this->pilihDosen($dosenList, $slot);
-            if ($dosen === false) break;
+            if ($dosen === false) {
+                break;
+            }
 
             $peran = ($dosen !== null && $dosen === $mk->dosen_ketua_id) ? 'Ketua' : 'Anggota';
 
@@ -157,16 +165,21 @@ class SchedulerService
     /** @return int|false|null */
     protected function pilihDosen(array $dosenList, array $slot)
     {
-        if (!$dosenList) return null;
+        if (! $dosenList) {
+            return null;
+        }
 
         foreach ($dosenList as $d) {
-            if (!$this->dosenBentrok($d, $slot)) return $d;
+            if (! $this->dosenBentrok($d, $slot)) {
+                return $d;
+            }
         }
+
         return false;
     }
 
     /* ------------------------------------------------------------------ */
-    /* MK Pilihan: satu slot, saling bentrok, maksimal 2                  */
+    /* MK Pilihan: satu slot, saling bentrok, maksimal 2 */
     /* ------------------------------------------------------------------ */
 
     /**
@@ -187,11 +200,14 @@ class SchedulerService
         $kelompok = $this->bagiPilihan($pilihan);
 
         foreach ($kelompok as $noKelompok => $grup) {
-            if ($grup->isEmpty()) continue;
+            if ($grup->isEmpty()) {
+                continue;
+            }
 
             $slot = $this->cariSlotPilihan($grup, $cohort);
-            if (!$slot) {
+            if (! $slot) {
                 $this->log[] = "GAGAL  MK Pilihan kelompok {$noKelompok}: tidak ada slot yang bebas.";
+
                 continue;
             }
 
@@ -200,14 +216,16 @@ class SchedulerService
 
             foreach ($grup as $mk) {
                 $ruangan = $this->cariRuangan($mk, $slot);
-                if (!$ruangan) {
+                if (! $ruangan) {
                     $this->peringatan[] = "MK Pilihan {$mk->kode_mk}: tidak ada ruangan kosong di slot pilihan.";
+
                     continue;
                 }
 
                 $dosen = $mk->dosen_ketua_id ?? $mk->dosen_anggota_id;
                 if ($dosen && $this->dosenBentrok($dosen, $slot)) {
                     $this->peringatan[] = "MK Pilihan {$mk->kode_mk}: dosennya bentrok, dilewati.";
+
                     continue;
                 }
 
@@ -221,8 +239,9 @@ class SchedulerService
 
                 // MK Pilihan wajib punya dosen. Kalau tidak ada, jangan dijadwalkan
                 // supaya tidak muncul kelas tanpa pengampu di tabel jadwal.
-                if (!$dosen) {
+                if (! $dosen) {
                     $this->peringatan[] = "MK Pilihan {$mk->kode_mk}: belum ada dosen, dilewati.";
+
                     continue;
                 }
 
@@ -255,7 +274,9 @@ class SchedulerService
                 );
             }
 
-            if ($terjadwal === []) continue;
+            if ($terjadwal === []) {
+                continue;
+            }
 
             // Kunci cohort dengan durasi terjavadoc yang sebenarnya terpakai,
             // bukan SKS terbesar, supaya tidak memblokir slot lain sia-sia.
@@ -306,7 +327,7 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Pencarian slot                                                      */
+    /* Pencarian slot */
     /* ------------------------------------------------------------------ */
 
     /**
@@ -329,19 +350,25 @@ class SchedulerService
                     'selesai' => $this->menit($mulai) + $durasi,
                 ];
 
-                if ($this->cohortBentrok($cohort, $slot)) continue;
+                if ($this->cohortBentrok($cohort, $slot)) {
+                    continue;
+                }
 
                 $bebas = $this->hitungRuanganBebas($mk, $slot);
-                if ($bebas < $mk->jumlah_kelas) continue;
+                if ($bebas < $mk->jumlah_kelas) {
+                    continue;
+                }
 
                 // Setiap kelas paralel harus diampu dosen yang berbeda,
                 // karena satu slot dipakai bersamaan oleh semua kelas paralel.
                 if ($dosenList) {
                     $dosenBebas = count(array_filter(
                         $dosenList,
-                        fn ($d) => !$this->dosenBentrok($d, $slot)
+                        fn ($d) => ! $this->dosenBentrok($d, $slot)
                     ));
-                    if ($dosenBebas < min($mk->jumlah_kelas, count($dosenList))) continue;
+                    if ($dosenBebas < min($mk->jumlah_kelas, count($dosenList))) {
+                        continue;
+                    }
                 }
 
                 if ($bebas > $skorTerbaik) {
@@ -361,7 +388,9 @@ class SchedulerService
      */
     protected function cariSlotPilihan(Collection $terambil, string $cohort): ?array
     {
-        if ($terambil->isEmpty()) return null;
+        if ($terambil->isEmpty()) {
+            return null;
+        }
 
         $durasi = $terambil->max('sks') * 50;
         $terbaik = null;
@@ -375,19 +404,25 @@ class SchedulerService
                     'selesai' => $this->menit($mulai) + $durasi,
                 ];
 
-                if ($this->cohortBentrok($cohort, $slot)) continue;
+                if ($this->cohortBentrok($cohort, $slot)) {
+                    continue;
+                }
 
                 $skor = 0;
                 $ruanganTerpakai = [];
                 foreach ($terambil as $mk) {
                     $dosen = $mk->dosen_ketua_id ?? $mk->dosen_anggota_id;
-                    if ($dosen && $this->dosenBentrok($dosen, $slot)) continue;
+                    if ($dosen && $this->dosenBentrok($dosen, $slot)) {
+                        continue;
+                    }
 
                     $ruang = $this->ruanganTersedia($mk, $slot)
                         ->reject(fn ($r) => in_array($r->id, $ruanganTerpakai, true))
                         ->first();
 
-                    if (!$ruang) continue;
+                    if (! $ruang) {
+                        continue;
+                    }
 
                     $ruanganTerpakai[] = $ruang->id;
                     $skor++;
@@ -404,7 +439,7 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Ruangan & dosen                                                     */
+    /* Ruangan & dosen */
     /* ------------------------------------------------------------------ */
 
     protected function hitungRuanganBebas(MataKuliahDetail $mk, array $slot): int
@@ -434,35 +469,48 @@ class SchedulerService
     protected function ruanganBentrok(int $ruanganId, array $slot): bool
     {
         foreach ($this->pakaiRuangan as $p) {
-            if ($p['hari'] !== $slot['hari']) continue;
-            if ($p['ruangan_id'] !== $ruanganId) continue;
+            if ($p['hari'] !== $slot['hari']) {
+                continue;
+            }
+            if ($p['ruangan_id'] !== $ruanganId) {
+                continue;
+            }
             if ($this->tumpang($slot['mulai'], $slot['selesai'], $p['mulai'], $p['selesai'])) {
                 return true;
             }
         }
+
         return false;
     }
 
     protected function dosenBentrok(?int $dosenId, array $slot): bool
     {
-        if (!$dosenId) return false;
+        if (! $dosenId) {
+            return false;
+        }
         foreach ($this->pakaiDosen[$dosenId] ?? [] as $p) {
-            if ($p['hari'] !== $slot['hari']) continue;
+            if ($p['hari'] !== $slot['hari']) {
+                continue;
+            }
             if ($this->tumpang($slot['mulai'], $slot['selesai'], $p['mulai'], $p['selesai'])) {
                 return true;
             }
         }
+
         return false;
     }
 
     protected function cohortBentrok(string $cohort, array $slot): bool
     {
         foreach ($this->kunciCohort[$cohort] ?? [] as $p) {
-            if ($p['hari'] !== $slot['hari']) continue;
+            if ($p['hari'] !== $slot['hari']) {
+                continue;
+            }
             if ($this->tumpang($slot['mulai'], $slot['selesai'], $p['mulai'], $p['selesai'])) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -484,7 +532,7 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Simpan                                                              */
+    /* Simpan */
     /* ------------------------------------------------------------------ */
 
     protected function simpan(
@@ -501,7 +549,7 @@ class SchedulerService
                 'nomor_rombel' => $no,
             ],
             [
-                'kode_rombel' => $mk->kode_mk . '-' . $no,
+                'kode_rombel' => $mk->kode_mk.'-'.$no,
                 'kapasitas' => $mk->kapasitas_per_kelas,
                 'ruangan_id' => $ruangan->id,
                 'hari' => $slot['hari'],
@@ -529,7 +577,7 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Reset & muat state semester lain                                    */
+    /* Reset & muat state semester lain */
     /* ------------------------------------------------------------------ */
 
     protected function reset(int $semester, ?string $prodi, array $options = []): void
@@ -596,7 +644,7 @@ class SchedulerService
     }
 
     /* ------------------------------------------------------------------ */
-    /* Helper                                                              */
+    /* Helper */
     /* ------------------------------------------------------------------ */
 
     protected function tumpang(int $a1, int $a2, int $b1, int $b2): bool
@@ -608,6 +656,7 @@ class SchedulerService
     {
         $waktu = (string) $waktu;
         [$j, $m] = array_map('intval', explode(':', $waktu));
+
         return $j * 60 + $m;
     }
 
@@ -618,7 +667,7 @@ class SchedulerService
 
     protected function namaCohort(?string $prodi, int $semester): string
     {
-        return ($prodi ?: 'umum') . '|' . $semester;
+        return ($prodi ?: 'umum').'|'.$semester;
     }
 
     protected function hasil(int $semester, int $jumlah, ?string $catatan = null): array

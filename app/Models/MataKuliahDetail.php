@@ -12,10 +12,11 @@ class MataKuliahDetail extends Model
     use HasFactory;
 
     protected $table = 'mata_kuliah_details';
+
     protected $fillable = [
         'kode_mk', 'nama_mk', 'sks', 'semester', 'tipe', 'prodi',
         'dosen_ketua_id', 'dosen_anggota_id', 'jumlah_kelas',
-        'kapasitas_per_kelas', 'butuh_lab', 'catatan', 'is_active'
+        'kapasitas_per_kelas', 'butuh_lab', 'catatan', 'is_active',
     ];
 
     protected $casts = [

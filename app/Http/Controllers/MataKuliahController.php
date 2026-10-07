@@ -37,7 +37,7 @@ class MataKuliahController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:150',
-            'kode' => 'required|string|max:30|unique:mata_kuliah,kode,' . $mataKuliah->id,
+            'kode' => 'required|string|max:30|unique:mata_kuliah,kode,'.$mataKuliah->id,
             'sks' => 'required|integer|min:1|max:6',
             'semester' => 'required|integer|min:1|max:8',
             'tipe' => 'required|in:Fakultas,Prodi',
@@ -60,8 +60,8 @@ class MataKuliahController extends Controller
 
     public function destroy(Request $request, ?MataKuliah $mataKuliah = null): RedirectResponse
     {
-        if (!$mataKuliah || !$mataKuliah->exists) {
-            $mkId = (int)$request->input('mata_kuliah_id');
+        if (! $mataKuliah || ! $mataKuliah->exists) {
+            $mkId = (int) $request->input('mata_kuliah_id');
             $mataKuliah = MataKuliah::findOrFail($mkId);
         }
 

@@ -8,6 +8,7 @@ use App\Models\MataKuliahDetail;
 use App\Models\Rombel;
 use App\Models\Ruangan;
 use App\Services\SchedulerService;
+use Database\Seeders\JadwalKuliahSchedulerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,16 +26,17 @@ class SchedulerServiceTest extends TestCase
     use RefreshDatabase;
 
     private const SEMESTER = 1;
+
     private const PRODI = 'Teknik Informatika';
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\JadwalKuliahSchedulerSeeder::class);
+        $this->seed(JadwalKuliahSchedulerSeeder::class);
     }
 
     /* ------------------------------------------------------------------ */
-    /* Helper                                                              */
+    /* Helper */
     /* ------------------------------------------------------------------ */
 
     private function generate(int $semester = self::SEMESTER): array
@@ -50,6 +52,7 @@ class SchedulerServiceTest extends TestCase
     private function menit(string $waktu): int
     {
         [$j, $m] = array_map('intval', explode(':', $waktu));
+
         return $j * 60 + $m;
     }
 
@@ -82,7 +85,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 1 - bentrok kelas (cohort)                                   */
+    /* Aturan 1 - bentrok kelas (cohort) */
     /* ------------------------------------------------------------------ */
 
     public function test_cohort_tidak_boleh_dua_mk_wajib_dalam_waktu_sama(): void
@@ -96,14 +99,24 @@ class SchedulerServiceTest extends TestCase
                 $a = $jadwal[$i];
                 $b = $jadwal[$k];
 
-                if ($a['hari'] !== $b['hari']) continue;
-                if ($a['mk']->id === $b['mk']->id) continue; // kelas paralel MK yang sama
-                if ($a['mk']->semester !== $b['mk']->semester) continue;
-                if ($a['mk']->prodi !== $b['mk']->prodi) continue;
+                if ($a['hari'] !== $b['hari']) {
+                    continue;
+                }
+                if ($a['mk']->id === $b['mk']->id) {
+                    continue;
+                } // kelas paralel MK yang sama
+                if ($a['mk']->semester !== $b['mk']->semester) {
+                    continue;
+                }
+                if ($a['mk']->prodi !== $b['mk']->prodi) {
+                    continue;
+                }
 
                 // MK Pilihan memang sengaja diletakkan pada slot yang sama
                 // supaya mahasiswa tidak bisa memilih lebih dari satu.
-                if ($a['mk']->tipe === 'Pilihan' && $b['mk']->tipe === 'Pilihan') continue;
+                if ($a['mk']->tipe === 'Pilihan' && $b['mk']->tipe === 'Pilihan') {
+                    continue;
+                }
 
                 $this->assertFalse(
                     $this->tumpang($a, $b),
@@ -123,7 +136,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 2 - bentrok dosen                                            */
+    /* Aturan 2 - bentrok dosen */
     /* ------------------------------------------------------------------ */
 
     public function test_dosen_tidak_boleh_bentrok(): void
@@ -137,8 +150,12 @@ class SchedulerServiceTest extends TestCase
                 $a = $jadwal[$i];
                 $b = $jadwal[$k];
 
-                if ($a['hari'] !== $b['hari']) continue;
-                if (!$a['dosen_id'] || $a['dosen_id'] !== $b['dosen_id']) continue;
+                if ($a['hari'] !== $b['hari']) {
+                    continue;
+                }
+                if (! $a['dosen_id'] || $a['dosen_id'] !== $b['dosen_id']) {
+                    continue;
+                }
 
                 $this->assertFalse(
                     $this->tumpang($a, $b),
@@ -169,7 +186,9 @@ class SchedulerServiceTest extends TestCase
         $this->assertGreaterThan(0, $rombel->count());
 
         foreach ($rombel as $r) {
-            if ($r->peran_dosen !== 'Ketua') continue;
+            if ($r->peran_dosen !== 'Ketua') {
+                continue;
+            }
 
             $this->assertSame(
                 $r->mataKuliah->dosen_ketua_id,
@@ -180,7 +199,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 3 - kelas paralel                                            */
+    /* Aturan 3 - kelas paralel */
     /* ------------------------------------------------------------------ */
 
     public function test_kelas_paralel_dapat_ruangan_dan_dosen_berbeda(): void
@@ -200,7 +219,9 @@ class SchedulerServiceTest extends TestCase
         $ditemukan = 0;
 
         foreach ($grup as $kunci => $kelompok) {
-            if ($kelompok->count() < 2) continue;
+            if ($kelompok->count() < 2) {
+                continue;
+            }
             $ditemukan++;
 
             [$mkId, $hari, $mulai] = explode('|', $kunci);
@@ -229,7 +250,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 4 - slot dan durasi                                          */
+    /* Aturan 4 - slot dan durasi */
     /* ------------------------------------------------------------------ */
 
     public function test_jam_mulai_selalu_dari_daftar_slot(): void
@@ -277,7 +298,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 5 - MK Pilihan                                               */
+    /* Aturan 5 - MK Pilihan */
     /* ------------------------------------------------------------------ */
 
     public function test_mk_pilihan_dibagi_ke_dua_kelompok_slot(): void
@@ -300,8 +321,8 @@ class SchedulerServiceTest extends TestCase
         // pada kelompok yang sama. Cukup pastikan tiap kelompok punya slot unik.
         $slot = $hasil['slot_pilihan'];
         $this->assertNotSame(
-            $slot[0]['hari'] . $slot[0]['mulai'],
-            $slot[1]['hari'] . $slot[1]['mulai'],
+            $slot[0]['hari'].$slot[0]['mulai'],
+            $slot[1]['hari'].$slot[1]['mulai'],
             'Dua kelompok MK Pilihan tidak boleh berbagi slot.'
         );
 
@@ -351,7 +372,7 @@ class SchedulerServiceTest extends TestCase
         // Mahasiswa bisa ambil maksimal 1 MK per kelompok = MAKS_PILIHAN total.
         $slotUnik = [];
         foreach ($hasil['slot_pilihan'] as $slot) {
-            $slotUnik[$slot['hari'] . ' ' . $this->format($slot['mulai'])] = true;
+            $slotUnik[$slot['hari'].' '.$this->format($slot['mulai'])] = true;
         }
         $this->assertCount(
             SchedulerService::MAKS_PILIHAN,
@@ -393,7 +414,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Aturan 6 - ruangan                                                  */
+    /* Aturan 6 - ruangan */
     /* ------------------------------------------------------------------ */
 
     public function test_ruangan_tidak_boleh_bentrok(): void
@@ -407,8 +428,12 @@ class SchedulerServiceTest extends TestCase
                 $a = $jadwal[$i];
                 $b = $jadwal[$k];
 
-                if ($a['hari'] !== $b['hari']) continue;
-                if ($a['ruangan_id'] !== $b['ruangan_id']) continue;
+                if ($a['hari'] !== $b['hari']) {
+                    continue;
+                }
+                if ($a['ruangan_id'] !== $b['ruangan_id']) {
+                    continue;
+                }
 
                 $this->assertFalse(
                     $this->tumpang($a, $b),
@@ -446,7 +471,9 @@ class SchedulerServiceTest extends TestCase
         $this->generate();
 
         foreach ($this->semuaJadwal() as $j) {
-            if (!$j['mk']->butuh_lab) continue;
+            if (! $j['mk']->butuh_lab) {
+                continue;
+            }
 
             $this->assertSame(
                 'Lab',
@@ -461,7 +488,9 @@ class SchedulerServiceTest extends TestCase
         $this->generate();
 
         foreach ($this->semuaJadwal() as $j) {
-            if ($j['mk']->butuh_lab) continue;
+            if ($j['mk']->butuh_lab) {
+                continue;
+            }
 
             $this->assertNotSame(
                 'Lab',
@@ -497,7 +526,7 @@ class SchedulerServiceTest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
-    /* Perilaku lain                                                       */
+    /* Perilaku lain */
     /* ------------------------------------------------------------------ */
 
     public function test_regenerasi_bersifat_idempoten(): void
@@ -578,8 +607,12 @@ class SchedulerServiceTest extends TestCase
             for ($k = $i + 1; $k < count($jadwal); $k++) {
                 $a = $jadwal[$i];
                 $b = $jadwal[$k];
-                if ($a['hari'] !== $b['hari']) continue;
-                if (!$a['dosen_id'] || $a['dosen_id'] !== $b['dosen_id']) continue;
+                if ($a['hari'] !== $b['hari']) {
+                    continue;
+                }
+                if (! $a['dosen_id'] || $a['dosen_id'] !== $b['dosen_id']) {
+                    continue;
+                }
 
                 $this->assertFalse($this->tumpang($a, $b), 'Dosen bentrok lintas semester.');
             }

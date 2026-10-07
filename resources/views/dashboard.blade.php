@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'SIWALAN - Dashboard')
+@section('title', 'APJAD - Dashboard')
 
 @section('content')
 <div class="admin-layout">
     <aside class="admin-sidebar">
         <div class="sidebar-top">
             <div class="sidebar-brand">
-                <h2>SIWALAN</h2>
+                <h2>APJAD</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="{{ route('dashboard') }}" class="sidebar-link active">
@@ -200,6 +200,13 @@
                     <label for="profile_password_baru">Password Baru</label>
                     <div class="modal-input-container">
                         <input type="password" id="profile_password_baru" name="password_baru" placeholder="Kosongkan jika tidak diubah">
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="profile_password_baru_confirmation">Konfirmasi Password Baru</label>
+                    <div class="modal-input-container">
+                        <input type="password" id="profile_password_baru_confirmation" name="password_baru_confirmation" placeholder="Ulangi password baru">
                     </div>
                 </div>
 

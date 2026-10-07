@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class VerifikasiJadwalCommand extends Command
 {
     protected $signature = 'jadwal:verifikasi';
+
     protected $description = 'Cek bentrok ruangan, dosen, dan kelas pada jadwal hasil generate';
 
     public function handle(): int
@@ -20,6 +21,7 @@ class VerifikasiJadwalCommand extends Command
 
         if ($jadwal->isEmpty()) {
             $this->warn('Tidak ada jadwal. Jalankan: php artisan jadwal:generate');
+
             return self::SUCCESS;
         }
 
@@ -57,12 +59,18 @@ class VerifikasiJadwalCommand extends Command
         foreach ($this->pasangan($jadwal, function ($a, $b) {
             $pa = $a->rombel->mataKuliah;
             $pb = $b->rombel->mataKuliah;
-            if (!$pa || !$pb) return false;
-            if ($pa->prodi !== $pb->prodi || $pa->semester !== $pb->semester) return false;
+            if (! $pa || ! $pb) {
+                return false;
+            }
+            if ($pa->prodi !== $pb->prodi || $pa->semester !== $pb->semester) {
+                return false;
+            }
 
             // Kelas paralel dari MK yang sama memang dijadwalkan bersamaan
             // (ruangan & dosen berbeda), jadi bukan bentrok.
-            if ($pa->id === $pb->id) return false;
+            if ($pa->id === $pb->id) {
+                return false;
+            }
 
             // MK Pilihan memang sengaja bentrok satu sama lain.
             return $pa->tipe !== 'Pilihan' || $pb->tipe !== 'Pilihan';
@@ -82,7 +90,9 @@ class VerifikasiJadwalCommand extends Command
 
         // 4. Setiap kelas wajib punya dosen pengampu
         foreach ($jadwal as $j) {
-            if ($j->dosen_id) continue;
+            if ($j->dosen_id) {
+                continue;
+            }
 
             $mk = $j->rombel?->mataKuliah;
             $masalah[] = sprintf(
@@ -97,14 +107,20 @@ class VerifikasiJadwalCommand extends Command
         // 5. Dosen yang sama tidak boleh mengampu MK berbeda di slot bersamaan
         $kunci = [];
         foreach ($jadwal as $j) {
-            if (!$j->dosen_id) continue;
-            $kunci[$j->dosen_id . '|' . $j->hari . '|' . $j->jam_mulai][] = $j;
+            if (! $j->dosen_id) {
+                continue;
+            }
+            $kunci[$j->dosen_id.'|'.$j->hari.'|'.$j->jam_mulai][] = $j;
         }
         foreach ($kunci as $grup) {
-            if (count($grup) < 2) continue;
+            if (count($grup) < 2) {
+                continue;
+            }
 
             $mkIds = array_unique(array_map(fn ($j) => $j->rombel?->mataKuliah?->id, $grup));
-            if (count($mkIds) < 2) continue; // kelas paralel MK yang sama, wajar
+            if (count($mkIds) < 2) {
+                continue;
+            } // kelas paralel MK yang sama, wajar
 
             $nama = $grup[0]->dosen->nama;
             $kode = implode(', ', array_filter(array_map(
@@ -124,10 +140,11 @@ class VerifikasiJadwalCommand extends Command
         if ($masalah === []) {
             $this->info('OK - tidak ada bentrok ruangan, dosen, maupun kelas.');
         } else {
-            $this->error('Ditemukan ' . count($masalah) . ' masalah:');
+            $this->error('Ditemukan '.count($masalah).' masalah:');
             foreach ($masalah as $m) {
                 $this->line("  - $m");
             }
+
             return self::FAILURE;
         }
 
@@ -135,7 +152,7 @@ class VerifikasiJadwalCommand extends Command
         $this->newLine();
         foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari) {
             $rows = $jadwal->where('hari', $hari)->sortBy('jam_mulai');
-            $this->line("{$hari}: " . $rows->count() . ' kelas');
+            $this->line("{$hari}: ".$rows->count().' kelas');
         }
 
         return self::SUCCESS;
@@ -151,13 +168,20 @@ class VerifikasiJadwalCommand extends Command
                 $a = $data[$i];
                 $b = $data[$j];
 
-                if ($a->hari !== $b->hari) continue;
-                if (!$filter($a, $b)) continue;
-                if (!$this->tumpang($a, $b)) continue;
+                if ($a->hari !== $b->hari) {
+                    continue;
+                }
+                if (! $filter($a, $b)) {
+                    continue;
+                }
+                if (! $this->tumpang($a, $b)) {
+                    continue;
+                }
 
                 $hasil[] = [$a, $b];
             }
         }
+
         return $hasil;
     }
 
@@ -171,12 +195,14 @@ class VerifikasiJadwalCommand extends Command
     {
         $w = (string) $w;
         [$j, $m] = array_map('intval', explode(':', $w));
+
         return $j * 60 + $m;
     }
 
     protected function jam($w): string
     {
         $w = (string) $w;
+
         return strlen($w) > 5 ? substr($w, 0, 5) : $w;
     }
 }

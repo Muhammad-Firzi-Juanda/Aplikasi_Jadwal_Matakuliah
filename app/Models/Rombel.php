@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,10 +13,11 @@ class Rombel extends Model
     use HasFactory;
 
     protected $table = 'rombels';
+
     protected $fillable = [
         'mata_kuliah_detail_id', 'kode_rombel', 'nomor_rombel',
         'kapasitas', 'ruangan_id', 'hari', 'jam_mulai', 'jam_selesai',
-        'dosen_pengampu_id', 'peran_dosen', 'is_active'
+        'dosen_pengampu_id', 'peran_dosen', 'is_active',
     ];
 
     protected $casts = [
@@ -54,8 +56,9 @@ class Rombel extends Model
 
     public function getDurasiMenitAttribute(): int
     {
-        $mulai = \Carbon\Carbon::parse($this->jam_mulai);
-        $selesai = \Carbon\Carbon::parse($this->jam_selesai);
+        $mulai = Carbon::parse($this->jam_mulai);
+        $selesai = Carbon::parse($this->jam_selesai);
+
         return $mulai->diffInMinutes($selesai);
     }
 }

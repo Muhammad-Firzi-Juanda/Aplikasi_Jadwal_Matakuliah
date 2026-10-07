@@ -12,6 +12,7 @@ class KelasJadwal extends Model
     use HasFactory;
 
     protected $table = 'kelas_jadwal';
+
     protected $fillable = ['mata_kuliah_id', 'ruang', 'kapasitas', 'hari', 'jam_mulai', 'jam_selesai', 'kode_kelas'];
 
     public function mataKuliah(): BelongsTo

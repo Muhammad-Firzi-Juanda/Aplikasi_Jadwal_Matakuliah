@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Fakultas;
-use App\Models\Prodi;
 use App\Models\MataKuliah;
-use Illuminate\Http\Request;
+use App\Models\Prodi;
 use Illuminate\View\View;
 
 class JadwalKuliahController extends Controller

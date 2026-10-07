@@ -1,15 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'SIWALAN - Manajemen Akun')
+@section('title', 'APJAD - Manajemen Akun')
 
 @section('content')
 <div class="admin-layout">
     <aside class="admin-sidebar">
         <div class="sidebar-top">
             <div class="sidebar-brand">
-                <h2>SIWALAN</h2>
+                <h2>APJAD</h2>
             </div>
             <nav class="sidebar-nav">
+                @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
                 <a href="{{ route('dashboard') }}" class="sidebar-link">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
@@ -19,6 +20,7 @@
                     </svg>
                     <span>Dashboard</span>
                 </a>
+                @endif
                 <a href="{{ route('manajemen-akun') }}" class="sidebar-link active">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -26,6 +28,7 @@
                     </svg>
                     <span>Manajemen Akun</span>
                 </a>
+                @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
                 <a href="{{ route('jadwal-kuliah.index') }}" class="sidebar-link">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"></rect>
@@ -40,6 +43,7 @@
                     </svg>
                     <span>Penjadwalan</span>
                 </a>
+                @endif
             </nav>
         </div>
 
@@ -190,6 +194,9 @@
                     <label for="create_role">Role</label>
                     <div class="modal-input-container">
                         <select id="create_role" name="role" required>
+                            @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
+                                <option value="Admin">Admin</option>
+                            @endif
                             <option value="Fakultas">Fakultas</option>
                             <option value="Jurusan">Jurusan</option>
                             <option value="Prodi">Prodi</option>
@@ -262,6 +269,7 @@
                     <label for="edit_role">Role</label>
                     <div class="modal-input-container">
                         <select id="edit_role" name="role" required>
+                            <option value="Admin">Admin</option>
                             <option value="Fakultas">Fakultas</option>
                             <option value="Jurusan">Jurusan</option>
                             <option value="Prodi">Prodi</option>
@@ -338,6 +346,13 @@
                     <label for="profile_password_baru">Password Baru</label>
                     <div class="modal-input-container">
                         <input type="password" id="profile_password_baru" name="password_baru" placeholder="Kosongkan jika tidak diubah">
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="profile_password_baru_confirmation">Konfirmasi Password Baru</label>
+                    <div class="modal-input-container">
+                        <input type="password" id="profile_password_baru_confirmation" name="password_baru_confirmation" placeholder="Ulangi password baru">
                     </div>
                 </div>
 

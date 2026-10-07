@@ -21,7 +21,7 @@ class PenjadwalanController extends Controller
         $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
             ->orderBy('semester')
             ->orderBy('kode_mk');
-            
+
         if (auth()->user()->role === 'Fakultas') {
             $query->where('tipe', 'Fakultas');
         }
@@ -76,7 +76,7 @@ class PenjadwalanController extends Controller
 
         $mk = MataKuliahDetail::create($data);
 
-        return $this->kembali('Mata kuliah ' . $mk->kode_mk . ' berhasil ditambahkan.');
+        return $this->kembali('Mata kuliah '.$mk->kode_mk.' berhasil ditambahkan.');
     }
 
     public function update(Request $request, MataKuliahDetail $mataKuliah)
@@ -85,7 +85,7 @@ class PenjadwalanController extends Controller
 
         $mataKuliah->update($data);
 
-        return $this->kembali('Mata kuliah ' . $mataKuliah->kode_mk . ' berhasil diperbarui.');
+        return $this->kembali('Mata kuliah '.$mataKuliah->kode_mk.' berhasil diperbarui.');
     }
 
     public function destroy(MataKuliahDetail $mataKuliah)
@@ -102,7 +102,7 @@ class PenjadwalanController extends Controller
         $mataKuliah->rombels()->delete();
         $mataKuliah->delete();
 
-        return $this->kembali('Mata kuliah ' . $kode . ' berhasil dihapus.');
+        return $this->kembali('Mata kuliah '.$kode.' berhasil dihapus.');
     }
 
     public function generate(Request $request, SchedulerService $scheduler)
@@ -143,7 +143,7 @@ class PenjadwalanController extends Controller
         return redirect()
             ->route('penjadwalan.index')
             ->with('log_generate', $log)
-            ->with('flash_success', 'Jadwal berhasil digenerate untuk semester ' . implode(', ', $semesters) . '.');
+            ->with('flash_success', 'Jadwal berhasil digenerate untuk semester '.implode(', ', $semesters).'.');
     }
 
     public function downloadTemplate(MataKuliahImportService $importer): BinaryFileResponse
@@ -170,7 +170,7 @@ class PenjadwalanController extends Controller
             return redirect()->back()->with('flash_error', 'File kosong atau tidak ada baris valid.');
         }
 
-        if (!empty($hasil['failed'])) {
+        if (! empty($hasil['failed'])) {
             return redirect()->back()
                 ->with('flash_error', 'Import selesai dengan galat: '.$hasil['failed'][0].(count($hasil['failed']) > 1 ? ' (+'.(count($hasil['failed']) - 1).' galat lain)' : ''))
                 ->with('import_gagal', $hasil['failed'])
@@ -194,9 +194,9 @@ class PenjadwalanController extends Controller
             'prodi' => ['required', 'string', 'max:100'],
             'dosen_ketua_id' => ['nullable', 'integer', 'exists:dosens,id'],
             'dosen_anggota_id' => ['nullable', 'integer', 'exists:dosens,id', 'different:dosen_ketua_id'],
-                'jumlah_kelas' => ['required', 'integer', 'min:1', 'max:10'],
-                'kapasitas_per_kelas' => ['required', 'integer', 'min:10', 'max:200'],
-                'butuh_lab' => ['nullable', 'boolean'],
+            'jumlah_kelas' => ['required', 'integer', 'min:1', 'max:10'],
+            'kapasitas_per_kelas' => ['required', 'integer', 'min:10', 'max:200'],
+            'butuh_lab' => ['nullable', 'boolean'],
         ], [
             'kode_mk.unique' => 'Kode MK sudah dipakai mata kuliah lain.',
             'kode_mk.required' => 'Kode MK wajib diisi.',

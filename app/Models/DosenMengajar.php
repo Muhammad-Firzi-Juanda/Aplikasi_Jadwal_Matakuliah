@@ -11,6 +11,7 @@ class DosenMengajar extends Model
     use HasFactory;
 
     protected $table = 'dosen_mengajar';
+
     protected $fillable = ['nama_dosen', 'nip', 'kelas_jadwal_id', 'status', 'tanggal_mulai', 'tanggal_selesai'];
 
     protected $casts = [

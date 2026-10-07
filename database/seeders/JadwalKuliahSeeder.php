@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\Fakultas;
-use App\Models\Prodi;
-use App\Models\MataKuliah;
-use App\Models\KelasJadwal;
 use App\Models\DosenMengajar;
+use App\Models\Fakultas;
+use App\Models\KelasJadwal;
+use App\Models\MataKuliah;
+use App\Models\Prodi;
 use Illuminate\Database\Seeder;
 
 class JadwalKuliahSeeder extends Seeder

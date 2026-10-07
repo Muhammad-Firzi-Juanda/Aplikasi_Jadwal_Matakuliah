@@ -1,11 +1,11 @@
 <?php
 // index.php
 session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__.'/config/database.php';
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
+    header('Location: dashboard.php');
     exit;
 }
 
@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emailInput = trim($_POST['email'] ?? '');
     $passwordInput = $_POST['password'] ?? '';
 
-    if (!empty($emailInput) && !empty($passwordInput)) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
+    if (! empty($emailInput) && ! empty($passwordInput)) {
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
         $stmt->execute([$emailInput]);
         $user = $stmt->fetch();
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
 
-                header("Location: dashboard.php");
+                header('Location: dashboard.php');
                 exit;
             } else {
                 $showError = true;
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- Error Modal Popup (Matching Image 2) -->
-    <?php if ($showError): ?>
+    <?php if ($showError) { ?>
     <div class="error-popup-backdrop" id="loginErrorModal">
         <div class="error-popup-card">
             <div class="error-popup-icon">
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="button" class="btn-popup-ok" onclick="closeErrorPopup()">OK</button>
         </div>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <script src="assets/js/app.js"></script>
 </body>

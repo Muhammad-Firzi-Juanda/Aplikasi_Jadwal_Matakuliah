@@ -11,6 +11,7 @@ class Fakultas extends Model
     use HasFactory;
 
     protected $table = 'fakultas';
+
     protected $fillable = ['nama', 'kode', 'dekan'];
 
     public function prodi(): HasMany

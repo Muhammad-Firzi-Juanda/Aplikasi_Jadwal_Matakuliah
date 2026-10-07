@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Fakultas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class FakultasController extends Controller
 {
@@ -29,8 +28,8 @@ class FakultasController extends Controller
     public function update(Request $request, Fakultas $fakultas): RedirectResponse
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:100|unique:fakultas,nama,' . $fakultas->id,
-            'kode' => 'nullable|string|max:20|unique:fakultas,kode,' . $fakultas->id,
+            'nama' => 'required|string|max:100|unique:fakultas,nama,'.$fakultas->id,
+            'kode' => 'nullable|string|max:20|unique:fakultas,kode,'.$fakultas->id,
             'dekan' => 'nullable|string|max:100',
         ], [
             'nama.required' => 'Nama fakultas wajib diisi!',
@@ -45,8 +44,8 @@ class FakultasController extends Controller
 
     public function destroy(Request $request, ?Fakultas $fakultas = null): RedirectResponse
     {
-        if (!$fakultas || !$fakultas->exists) {
-            $fakultasId = (int)$request->input('fakultas_id');
+        if (! $fakultas || ! $fakultas->exists) {
+            $fakultasId = (int) $request->input('fakultas_id');
             $fakultas = Fakultas::findOrFail($fakultasId);
         }
 

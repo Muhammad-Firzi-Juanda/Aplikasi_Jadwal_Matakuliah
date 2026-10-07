@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'SIWALAN - Mengelola Jadwal Kuliah')
+@section('title', 'APJAD - Mengelola Jadwal Kuliah')
 
 @section('content')
 <div class="admin-layout">
     <aside class="admin-sidebar">
         <div class="sidebar-top">
             <div class="sidebar-brand">
-                <h2>SIWALAN</h2>
+                <h2>APJAD</h2>
                 @if(Auth::user()->role === 'Fakultas')
                     <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Fakultas</span>
                 @else

@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Jadwal;
+use App\Models\Rombel;
 use App\Services\SchedulerService;
 use Illuminate\Console\Command;
 
@@ -17,8 +19,8 @@ class GenerateJadwalCommand extends Command
     public function handle(SchedulerService $scheduler): int
     {
         if ($this->option('reset')) {
-            \App\Models\Jadwal::query()->delete();
-            \App\Models\Rombel::query()->delete();
+            Jadwal::query()->delete();
+            Rombel::query()->delete();
             $this->info('Jadwal lama dihapus.');
         }
 
@@ -45,12 +47,12 @@ class GenerateJadwalCommand extends Command
             if ($hasil['slot_pilihan']) {
                 $this->comment("  Kuota MK Pilihan: {$hasil['kuota_pilihan']} (ambil 1 per kelompok)");
                 foreach ($hasil['slot_pilihan'] as $slot) {
-                    $this->comment('    ' . $slot['label']);
+                    $this->comment('    '.$slot['label']);
                 }
             }
 
             foreach ($hasil['peringatan'] as $peringatan) {
-                $this->warn('  - ' . $peringatan);
+                $this->warn('  - '.$peringatan);
             }
         }
 

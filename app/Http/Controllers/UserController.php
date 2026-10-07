@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
-use App\Models\User;
-use App\Models\Fakultas;
-use App\Models\Prodi;
-use App\Models\MataKuliah;
-use App\Models\KelasJadwal;
 use App\Models\DosenMengajar;
+use App\Models\Fakultas;
+use App\Models\KelasJadwal;
+use App\Models\MataKuliah;
+use App\Models\Prodi;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +17,14 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        if (Auth::user()->role === UserRole::ADMIN) {
+            return redirect()->route('manajemen-akun');
+        }
+
         $users = User::where('role', '!=', UserRole::SUPER_ADMIN)->orderBy('id', 'asc')->get();
-        
+
         $stats = [
             'total_users' => User::count(),
             'total_fakultas' => Fakultas::count(),
@@ -29,13 +33,14 @@ class UserController extends Controller
             'total_kelas' => KelasJadwal::count(),
             'total_dosen' => DosenMengajar::count(),
         ];
-        
+
         return view('dashboard', compact('users', 'stats'));
     }
 
     public function manajemenAkun(): View
     {
         $users = User::where('role', '!=', UserRole::SUPER_ADMIN)->orderBy('id', 'asc')->get();
+
         return view('admin.manajemen-akun', compact('users'));
     }
 
@@ -56,6 +61,10 @@ class UserController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
+        if ($validated['role'] === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat membuat akun Admin!');
+        }
+
         User::create([
             'nama' => trim($validated['nama']),
             'email' => trim($validated['email']),
@@ -63,14 +72,18 @@ class UserController extends Controller
             'password' => $validated['password'],
         ]);
 
-        return redirect()->back()->with('flash_success', 'Akun berhasil dibuat!');
+        return redirect()->back(fallback: route('dashboard'))->with('flash_success', 'Akun berhasil dibuat!');
     }
 
     public function update(Request $request, ?User $user = null): RedirectResponse
     {
-        if (!$user || !$user->exists) {
-            $userId = (int)$request->input('user_id');
+        if (! $user || ! $user->exists) {
+            $userId = (int) $request->input('user_id');
             $user = User::findOrFail($userId);
+        }
+
+        if ($user->role === UserRole::SUPER_ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Akun Super Admin tidak dapat diubah!');
         }
 
         $validated = $request->validate([
@@ -87,32 +100,48 @@ class UserController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
+        if ($validated['role'] === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN && $user->role !== UserRole::ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat menetapkan role Admin!');
+        }
+
+        if ($user->role === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN && Auth::id() !== $user->id) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat mengubah akun Admin lain!');
+        }
+
         $user->nama = trim($validated['nama']);
         $user->email = trim($validated['email']);
         $user->role = $validated['role'];
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password = $validated['password'];
         }
 
         $user->save();
 
-        return redirect()->back()->with('flash_success', 'Data akun berhasil diperbarui!');
+        return redirect()->back(fallback: route('dashboard'))->with('flash_success', 'Data akun berhasil diperbarui!');
     }
 
     public function destroy(Request $request, ?User $user = null): RedirectResponse
     {
-        if (!$user || !$user->exists) {
-            $userId = (int)$request->input('user_id');
+        if (! $user || ! $user->exists) {
+            $userId = (int) $request->input('user_id');
             $user = User::findOrFail($userId);
         }
 
         if ($user->id === Auth::id()) {
-            return redirect()->back()->with('flash_error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif!');
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif!');
+        }
+
+        if ($user->role === UserRole::SUPER_ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Akun Super Admin tidak dapat dihapus!');
+        }
+
+        if ($user->role === UserRole::ADMIN && Auth::user()->role !== UserRole::SUPER_ADMIN) {
+            return redirect()->back(fallback: route('dashboard'))->with('flash_error', 'Hanya Super Admin yang dapat menghapus akun Admin!');
         }
 
         $user->delete();
 
-        return redirect()->back()->with('flash_success', 'User berhasil dihapus!');
+        return redirect()->back(fallback: route('dashboard'))->with('flash_success', 'User berhasil dihapus!');
     }
 }

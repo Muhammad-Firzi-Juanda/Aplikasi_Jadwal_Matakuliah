@@ -11,6 +11,7 @@ class Dosen extends Model
     use HasFactory;
 
     protected $table = 'dosens';
+
     protected $fillable = ['nidn', 'nip', 'nama', 'jabatan', 'prodi', 'email', 'telepon', 'is_active'];
 
     public function jadwals(): HasMany

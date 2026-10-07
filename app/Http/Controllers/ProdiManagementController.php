@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dosen;
+use App\Models\Jadwal;
 use App\Models\MataKuliahDetail;
 use App\Models\Rombel;
-use App\Models\Jadwal;
 use App\Models\Ruangan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class ProdiManagementController extends Controller
 {
@@ -21,9 +21,9 @@ class ProdiManagementController extends Controller
         $prodiName = $prodi?->nama ?? 'Teknik Informatika';
 
         $dosens = Dosen::where('prodi', $prodiName)
-                        ->where('is_active', true)
-                        ->orderBy('nama')
-                        ->get();
+            ->where('is_active', true)
+            ->orderBy('nama')
+            ->get();
 
         return view('prodi.dosen', compact('dosens', 'prodiName'));
     }
@@ -35,19 +35,19 @@ class ProdiManagementController extends Controller
         $prodiName = $prodi?->nama ?? 'Teknik Informatika';
 
         $mataKuliahs = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
-                            ->where('prodi', $prodiName)
-                            ->where('is_active', true)
-                            ->orderBy('semester')
-                            ->orderBy('kode_mk')
-                            ->get()
-                            ->groupBy('semester');
+            ->where('prodi', $prodiName)
+            ->where('is_active', true)
+            ->orderBy('semester')
+            ->orderBy('kode_mk')
+            ->get()
+            ->groupBy('semester');
 
         $semesterList = MataKuliahDetail::where('prodi', $prodiName)
-                                ->where('is_active', true)
-                                ->distinct()
-                                ->pluck('semester')
-                                ->sort()
-                                ->values();
+            ->where('is_active', true)
+            ->distinct()
+            ->pluck('semester')
+            ->sort()
+            ->values();
 
         return view('prodi.mata-kuliah', compact('mataKuliahs', 'semesterList', 'prodiName'));
     }
@@ -59,11 +59,11 @@ class ProdiManagementController extends Controller
         $prodiName = $prodi?->nama ?? 'Teknik Informatika';
 
         $rombels = Rombel::with(['mataKuliah', 'dosenPengampu'])
-                        ->whereHas('mataKuliah', function($q) use ($prodiName) {
-                            $q->where('prodi', $prodiName);
-                        })
-                        ->orderBy('kode_rombel')
-                        ->get();
+            ->whereHas('mataKuliah', function ($q) use ($prodiName) {
+                $q->where('prodi', $prodiName);
+            })
+            ->orderBy('kode_rombel')
+            ->get();
 
         return view('prodi.rombel', compact('rombels', 'prodiName'));
     }
@@ -75,22 +75,22 @@ class ProdiManagementController extends Controller
         $prodiName = $prodi?->nama ?? 'Teknik Informatika';
 
         $jadwals = Jadwal::with(['rombel.mataKuliah', 'dosen', 'ruangan'])
-                        ->whereHas('rombel.mataKuliah', function($q) use ($prodiName) {
-                            $q->where('prodi', $prodiName);
-                        })
-                        ->where('is_active', true)
-                        ->orderBy('hari')
-                        ->orderBy('jam_mulai')
-                        ->get();
+            ->whereHas('rombel.mataKuliah', function ($q) use ($prodiName) {
+                $q->where('prodi', $prodiName);
+            })
+            ->where('is_active', true)
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->get();
 
-        $hariList   = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-        $perHari    = $jadwals->groupBy('hari');
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $perHari = $jadwals->groupBy('hari');
         $semesterList = MataKuliahDetail::where('prodi', $prodiName)
-                                ->where('is_active', true)
-                                ->distinct()
-                                ->pluck('semester')
-                                ->sort()
-                                ->values();
+            ->where('is_active', true)
+            ->distinct()
+            ->pluck('semester')
+            ->sort()
+            ->values();
 
         return view('prodi.jadwal', compact('jadwals', 'perHari', 'hariList', 'semesterList', 'prodiName'));
     }
@@ -137,8 +137,8 @@ class ProdiManagementController extends Controller
         $conflict = Jadwal::where('ruangan_id', $validated['ruangan_id'])
             ->where('hari', $validated['hari'])
             ->where('is_active', true)
-            ->where(function($q) use ($validated) {
-                $q->where(function($sub) use ($validated) {
+            ->where(function ($q) use ($validated) {
+                $q->where(function ($sub) use ($validated) {
                     $sub->where('jam_mulai', '<', $validated['jam_selesai'])
                         ->where('jam_selesai', '>', $validated['jam_mulai']);
                 });
@@ -153,8 +153,8 @@ class ProdiManagementController extends Controller
         $dosenConflict = Jadwal::where('dosen_id', $validated['dosen_id'])
             ->where('hari', $validated['hari'])
             ->where('is_active', true)
-            ->where(function($q) use ($validated) {
-                $q->where(function($sub) use ($validated) {
+            ->where(function ($q) use ($validated) {
+                $q->where(function ($sub) use ($validated) {
                     $sub->where('jam_mulai', '<', $validated['jam_selesai'])
                         ->where('jam_selesai', '>', $validated['jam_mulai']);
                 });
@@ -169,8 +169,8 @@ class ProdiManagementController extends Controller
         $rombelConflict = Jadwal::where('rombel_id', $validated['rombel_id'])
             ->where('hari', $validated['hari'])
             ->where('is_active', true)
-            ->where(function($q) use ($validated) {
-                $q->where(function($sub) use ($validated) {
+            ->where(function ($q) use ($validated) {
+                $q->where(function ($sub) use ($validated) {
                     $sub->where('jam_mulai', '<', $validated['jam_selesai'])
                         ->where('jam_selesai', '>', $validated['jam_mulai']);
                 });

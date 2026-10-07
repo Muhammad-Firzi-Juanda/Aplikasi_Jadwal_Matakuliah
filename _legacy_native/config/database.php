@@ -1,4 +1,5 @@
 <?php
+
 // config/database.php
 
 $host = '127.0.0.1';
@@ -37,16 +38,16 @@ try {
     ");
 
     // Seed default users if table is empty
-    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM `users`");
+    $stmt = $pdo->query('SELECT COUNT(*) as cnt FROM `users`');
     $rowCount = $stmt->fetch()['cnt'];
 
     if ($rowCount == 0) {
-        $insertStmt = $pdo->prepare("INSERT INTO `users` (`nama`, `email`, `password`, `role`) VALUES (?, ?, ?, ?)");
-        
+        $insertStmt = $pdo->prepare('INSERT INTO `users` (`nama`, `email`, `password`, `role`) VALUES (?, ?, ?, ?)');
+
         $defaultUsers = [
             ['Antony', 'antony@gmail.com', password_hash('admin123', PASSWORD_DEFAULT), 'Super Admin'],
             ['Revi Aedrian', 'randtian@gmail.com', password_hash('password123', PASSWORD_DEFAULT), 'Jurusan'],
-            ['Brian Darell', 'bdarell@gmail.com', password_hash('password123', PASSWORD_DEFAULT), 'Fakultas']
+            ['Brian Darell', 'bdarell@gmail.com', password_hash('password123', PASSWORD_DEFAULT), 'Fakultas'],
         ];
 
         foreach ($defaultUsers as $u) {
@@ -55,5 +56,5 @@ try {
     }
 
 } catch (PDOException $e) {
-    die("Database Connection Error: " . $e->getMessage());
+    exit('Database Connection Error: '.$e->getMessage());
 }

@@ -1,11 +1,11 @@
 <?php
 // dashboard.php
 session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__.'/config/database.php';
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+if (! isset($_SESSION['user_id'])) {
+    header('Location: index.php');
     exit;
 }
 
@@ -13,7 +13,7 @@ $currentUserName = $_SESSION['nama'] ?? 'Antony';
 $currentUserRole = $_SESSION['role'] ?? 'Super Admin';
 
 // Fetch all users from database
-$stmt = $pdo->query("SELECT * FROM users ORDER BY id ASC");
+$stmt = $pdo->query('SELECT * FROM users ORDER BY id ASC');
 $users = $stmt->fetchAll();
 
 $flashSuccess = $_SESSION['flash_success'] ?? null;
@@ -77,19 +77,19 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
             <!-- Dashboard Body -->
             <section class="admin-content">
-                <?php if ($flashSuccess): ?>
+                <?php if ($flashSuccess) { ?>
                     <div class="flash-alert success">
                         <span><?= htmlspecialchars($flashSuccess) ?></span>
                         <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;">✕</button>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
-                <?php if ($flashError): ?>
+                <?php if ($flashError) { ?>
                     <div class="flash-alert error">
                         <span><?= htmlspecialchars($flashError) ?></span>
                         <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;">✕</button>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
                 <h1 class="page-title">Manajemen User</h1>
 
@@ -115,12 +115,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($users)): ?>
+                            <?php if (empty($users)) { ?>
                                 <tr>
                                     <td colspan="4" style="padding: 24px; color: #64748b;">Belum ada data user.</td>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($users as $u): ?>
+                            <?php } else { ?>
+                                <?php foreach ($users as $u) { ?>
                                     <tr>
                                         <td><?= htmlspecialchars($u['nama']) ?></td>
                                         <td><?= htmlspecialchars($u['email']) ?></td>
@@ -133,7 +133,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                                         'id' => $u['id'],
                                                         'nama' => $u['nama'],
                                                         'email' => $u['email'],
-                                                        'role' => $u['role']
+                                                        'role' => $u['role'],
                                                     ])) ?>)">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -143,7 +143,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
                                                 <!-- Delete button (Matching Image 3) -->
                                                 <button type="button" class="btn-action delete-btn" title="Hapus User"
-                                                    onclick="openDeleteModal(<?= (int)$u['id'] ?>)">
+                                                    onclick="openDeleteModal(<?= (int) $u['id'] ?>)">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                                                         <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -154,8 +154,8 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                             </div>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                <?php } ?>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>

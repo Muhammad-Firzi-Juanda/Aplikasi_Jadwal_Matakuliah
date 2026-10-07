@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,14 +26,15 @@ class AuthController extends Controller
     private function redirectByRole(User $user): RedirectResponse
     {
         return match ($user->role) {
+            UserRole::ADMIN => redirect()->route('manajemen-akun'),
             UserRole::FAKULTAS => redirect()->route('fakultas.dashboard'),
-            UserRole::JURUSAN  => redirect()->route('jurusan.dashboard'),
-            UserRole::PRODI    => redirect()->route('prodi.dashboard'),
-            default            => redirect()->route('dashboard'),
+            UserRole::JURUSAN => redirect()->route('jurusan.dashboard'),
+            UserRole::PRODI => redirect()->route('prodi.dashboard'),
+            default => redirect()->route('dashboard'),
         };
     }
 
-    public function login(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function login(Request $request): RedirectResponse|JsonResponse
     {
         $request->validate([
             'email' => 'required|email|max:150',
@@ -51,16 +53,17 @@ class AuthController extends Controller
             $user = Auth::user();
 
             $redirectRoute = match ($user->role) {
+                UserRole::ADMIN => route('manajemen-akun'),
                 UserRole::FAKULTAS => route('fakultas.dashboard'),
-                UserRole::JURUSAN  => route('jurusan.dashboard'),
-                UserRole::PRODI    => route('prodi.dashboard'),
-                default            => route('dashboard'),
+                UserRole::JURUSAN => route('jurusan.dashboard'),
+                UserRole::PRODI => route('prodi.dashboard'),
+                default => route('dashboard'),
             };
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
-                    'success'  => true,
-                    'message'  => 'Login Berhasil',
+                    'success' => true,
+                    'message' => 'Login Berhasil',
                     'redirect' => $redirectRoute,
                 ]);
             }
@@ -103,14 +106,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (!Hash::check($request->input('password_lama'), $user->password)) {
+        if (! Hash::check($request->input('password_lama'), $user->password)) {
             return redirect()->back()->with('flash_error', 'Password lama yang Anda masukkan salah!');
         }
 
         $user->password = $request->input('password_baru');
         $user->save();
 
-        return redirect()->back()->with('flash_success', 'Password berhasil diubah!');
+        return redirect()->back(fallback: route('dashboard'))->with('flash_success', 'Password berhasil diubah!');
     }
 
     public function updateProfile(Request $request): RedirectResponse
@@ -130,12 +133,12 @@ class AuthController extends Controller
             'password_baru.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
 
-        if (!empty($request->input('password_baru'))) {
+        if (! empty($request->input('password_baru'))) {
             if (empty($request->input('password_lama'))) {
                 return redirect()->back()->with('flash_error', 'Password lama wajib diisi untuk mengubah password!');
             }
 
-            if (!Hash::check($request->input('password_lama'), $user->password)) {
+            if (! Hash::check($request->input('password_lama'), $user->password)) {
                 return redirect()->back()->with('flash_error', 'Password lama yang Anda masukkan salah!');
             }
 
@@ -146,6 +149,6 @@ class AuthController extends Controller
         $user->email = trim($request->input('email'));
         $user->save();
 
-        return redirect()->back()->with('flash_success', 'Profile berhasil diperbarui!');
+        return redirect()->back(fallback: route('dashboard'))->with('flash_success', 'Profile berhasil diperbarui!');
     }
 }

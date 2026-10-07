@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,7 @@ class UserManagementTest extends TestCase
     use RefreshDatabase;
 
     private const ADMIN_EMAIL = 'admin@siwalan.com';
+
     private const ADMIN_PASSWORD = 'admin123';
 
     protected function setUp(): void
@@ -25,6 +27,11 @@ class UserManagementTest extends TestCase
         return User::where('email', self::ADMIN_EMAIL)->firstOrFail();
     }
 
+    private function adminPembantu(): User
+    {
+        return User::where('email', 'admin@apjad.com')->firstOrFail();
+    }
+
     public function test_guest_is_redirected_to_login(): void
     {
         $response = $this->get('/dashboard');
@@ -35,7 +42,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->get('/login');
         $response->assertStatus(200);
-        $response->assertSee('SIWALAN');
+        $response->assertSee('APJAD');
         $response->assertSee('Universitas Maritim');
     }
 
@@ -156,6 +163,24 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_super_admin_can_create_admin_account(): void
+    {
+        $response = $this->actingAs($this->admin())->post('/users', [
+            'nama' => 'Admin Baru',
+            'email' => 'adminbaru@gmail.com',
+            'role' => UserRole::ADMIN,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertRedirect('/dashboard');
+        $response->assertSessionHas('flash_success', 'Akun berhasil dibuat!');
+        $this->assertDatabaseHas('users', [
+            'email' => 'adminbaru@gmail.com',
+            'role' => UserRole::ADMIN,
+        ]);
+    }
+
     public function test_cannot_create_super_admin_from_crud(): void
     {
         $response = $this->actingAs($this->admin())->post('/users', [
@@ -259,9 +284,108 @@ class UserManagementTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_admin_role_redirects_to_manajemen_akun_on_login(): void
+    {
+        $response = $this->post('/login', [
+            'email' => 'admin@apjad.com',
+            'password' => 'admin123',
+        ]);
+
+        $response->assertRedirect(route('manajemen-akun'));
+        $this->assertAuthenticated();
+    }
+
+    public function test_admin_can_access_manajemen_akun(): void
+    {
+        $adminAkun = $this->adminPembantu();
+        $response = $this->actingAs($adminAkun)->get('/manajemen-akun');
+
+        $response->assertStatus(200);
+        $response->assertSee('Manajemen User');
+        $response->assertSee('APJAD');
+        // Admin tidak melihat link Dashboard, Jadwal Kuliah, Penjadwalan di sidebar
+        $response->assertDontSee(route('dashboard'), false);
+        $response->assertDontSee(route('jadwal-kuliah.index'), false);
+        $response->assertDontSee(route('penjadwalan.index'), false);
+    }
+
+    public function test_admin_can_crud_account(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        // 1. Create account (e.g. Fakultas/Jurusan/Prodi)
+        $response = $this->actingAs($adminAkun)->post('/users', [
+            'nama' => 'Staff Baru',
+            'email' => 'staffbaru@gmail.com',
+            'role' => 'Jurusan',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHas('flash_success');
+        $this->assertDatabaseHas('users', ['email' => 'staffbaru@gmail.com']);
+
+        $createdUser = User::where('email', 'staffbaru@gmail.com')->firstOrFail();
+
+        // 2. Update account
+        $response = $this->actingAs($adminAkun)->put("/users/{$createdUser->id}", [
+            'nama' => 'Staff Diperbarui',
+            'email' => 'staffbaru@gmail.com',
+            'role' => 'Prodi',
+            'password' => '',
+            'password_confirmation' => '',
+        ]);
+
+        $response->assertSessionHas('flash_success');
+        $this->assertDatabaseHas('users', [
+            'id' => $createdUser->id,
+            'nama' => 'Staff Diperbarui',
+            'role' => 'Prodi',
+        ]);
+
+        // 3. Delete account
+        $response = $this->actingAs($adminAkun)->delete("/users/{$createdUser->id}");
+        $response->assertSessionHas('flash_success');
+        $this->assertDatabaseMissing('users', ['id' => $createdUser->id]);
+    }
+
+    public function test_admin_cannot_access_other_features(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        // Admin visiting root / is redirected to manajemen-akun
+        $this->actingAs($adminAkun)->get('/')->assertRedirect(route('manajemen-akun'));
+
+        // Admin cannot access Super Admin dashboard (forbidden 403)
+        $this->actingAs($adminAkun)->get('/dashboard')->assertForbidden();
+
+        // Admin cannot access master data or scheduling (forbidden 403)
+        $this->actingAs($adminAkun)->get('/jadwal-kuliah')->assertForbidden();
+        $this->actingAs($adminAkun)->get('/penjadwalan')->assertForbidden();
+        $this->actingAs($adminAkun)->post('/fakultas', ['nama' => 'Fakultas Test'])->assertForbidden();
+        $this->actingAs($adminAkun)->post('/mata-kuliah', ['nama' => 'MK Test'])->assertForbidden();
+        $this->actingAs($adminAkun)->post('/prodi', ['nama' => 'Prodi Test'])->assertForbidden();
+    }
+
+    public function test_admin_cannot_create_another_admin(): void
+    {
+        $adminAkun = $this->adminPembantu();
+
+        $response = $this->actingAs($adminAkun)->post('/users', [
+            'nama' => 'Admin Ilegal',
+            'email' => 'adminilegal@gmail.com',
+            'role' => UserRole::ADMIN,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHas('flash_error', 'Hanya Super Admin yang dapat membuat akun Admin!');
+        $this->assertDatabaseMissing('users', ['email' => 'adminilegal@gmail.com']);
+    }
+
     public function test_non_super_admin_cannot_access_admin_pages(): void
     {
-        $user = User::where('email', 'bdarell@gmail.com')->firstOrFail();
+        $user = User::where('email', 'randtian@gmail.com')->firstOrFail();
 
         $this->actingAs($user)->get('/jadwal-kuliah')->assertForbidden();
         $this->actingAs($user)->get('/penjadwalan')->assertForbidden();

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'SIWALAN - Login | Universitas Maritim Raja Ali Haji')
+@section('title', 'APJAD - Login | Universitas Maritim Raja Ali Haji')
 
 @section('content')
 <!-- Success Toast Popup (Matching Image 2) -->
@@ -25,7 +25,7 @@
     <!-- Right Side: Content & Form -->
     <div class="login-right-content">
         <div class="login-form-wrapper">
-            <h1 class="app-title">SIWALAN</h1>
+            <h1 class="app-title">APJAD</h1>
 
             <form action="{{ route('login.submit') }}" method="POST" class="login-form">
                 @csrf

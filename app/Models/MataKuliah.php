@@ -11,6 +11,7 @@ class MataKuliah extends Model
     use HasFactory;
 
     protected $table = 'mata_kuliah';
+
     protected $fillable = ['nama', 'kode', 'sks', 'semester', 'tipe', 'level_id', 'deskripsi'];
 
     public function kelasJadwal(): HasMany

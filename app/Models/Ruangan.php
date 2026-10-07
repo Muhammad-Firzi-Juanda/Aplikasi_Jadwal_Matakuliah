@@ -11,6 +11,7 @@ class Ruangan extends Model
     use HasFactory;
 
     protected $table = 'ruangans';
+
     protected $fillable = ['kode', 'nama', 'tipe', 'kapasitas', 'gedung', 'lantai', 'is_active'];
 
     public function jadwals(): HasMany

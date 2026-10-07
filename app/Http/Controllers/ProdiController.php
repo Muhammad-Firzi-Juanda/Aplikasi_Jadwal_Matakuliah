@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Prodi;
-use App\Models\Fakultas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,14 +27,15 @@ class ProdiController extends Controller
         Prodi::create($validated);
 
         $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+
         return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil ditambahkan!');
     }
 
     public function update(Request $request, Prodi $prodi): RedirectResponse
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:100|unique:prodi,nama,' . $prodi->id,
-            'kode' => 'nullable|string|max:20|unique:prodi,kode,' . $prodi->id,
+            'nama' => 'required|string|max:100|unique:prodi,nama,'.$prodi->id,
+            'kode' => 'nullable|string|max:20|unique:prodi,kode,'.$prodi->id,
             'fakultas_id' => 'required|exists:fakultas,id',
             'kaprodi' => 'nullable|string|max:100',
         ], [
@@ -49,19 +49,21 @@ class ProdiController extends Controller
         $prodi->update($validated);
 
         $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+
         return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil diperbarui!');
     }
 
     public function destroy(Request $request, ?Prodi $prodi = null): RedirectResponse
     {
-        if (!$prodi || !$prodi->exists) {
-            $prodiId = (int)$request->input('prodi_id');
+        if (! $prodi || ! $prodi->exists) {
+            $prodiId = (int) $request->input('prodi_id');
             $prodi = Prodi::findOrFail($prodiId);
         }
 
         $prodi->delete();
 
         $redirect = Auth::user()->role === 'Fakultas' ? 'fakultas.dashboard' : 'jadwal-kuliah.index';
+
         return redirect()->route($redirect)->with('flash_success', 'Program studi berhasil dihapus!');
     }
 }

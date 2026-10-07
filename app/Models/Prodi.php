@@ -11,6 +11,7 @@ class Prodi extends Model
     use HasFactory;
 
     protected $table = 'prodi';
+
     protected $fillable = ['nama', 'kode', 'fakultas_id', 'kaprodi'];
 
     public function fakultas(): BelongsTo
