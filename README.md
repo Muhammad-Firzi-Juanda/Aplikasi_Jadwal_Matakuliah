@@ -141,7 +141,12 @@ Terdapat file sampah atau non-standard seperti _legacy_native/ dan file PHP di r
 ## 30. Kesimpulan Audit
 Aplikasi Jadwal Mata Kuliah ini terstruktur dengan sangat baik, menggunakan standar Laravel 11/13 yang modern. Fungsionalitas inti telah diimplementasikan dengan baik mulai dari authentication, manajemen jadwal, hingga pengelolaan master data berbasis peran. Kualitas kode sangat baik, namun perlu memperhatikan project hygiene (file-file legacy).
 
-## 31. Log Update Terbaru (4 Oktober 2026)
-- **UI/UX:** Pembaruan tampilan dashboard Jurusan dan Prodi serta penyesuaian style CSS (`style.css`).
-- **Database & Model:** Penambahan relasi `prodi_id` pada model `User` beserta file migration.
-- **Controller:** Penambahan `ProdiManagementController` untuk pengelolaan khusus prodi.
+## 31. Log Update Terbaru
+- **UI Modernization & Consistency (11 Oktober 2026):**
+  - Standardisasi desain modern di seluruh halaman (Login, Dashboard, Manajemen Akun, Kelola Jadwal, dan Penjadwalan Otomatis).
+  - Tampilan sidebar konsisten dengan badge role (`Super Admin`, `Admin Fakultas`, `Admin Jurusan`, `Admin Prodi`) di bawah logo APJAD.
+  - Implementasi eye icon toggle (lihat/sembunyi password) pada login dan modal Edit Profile di semua dashboard.
+  - Refactor halaman Penjadwalan Otomatis (`/penjadwalan`): struktur 3 tab ringkas (*Input Mata Kuliah*, *Generate Jadwal*, *Jadwal Semester*) dilengkapi segmented toggle pill *Ganjil/Genap* dan accordion semester 1–8.
+- **Database Dump:**
+  - Backup skema dan data database aktif disertakan di file `database/jadwal_matakuliah.sql`.
+

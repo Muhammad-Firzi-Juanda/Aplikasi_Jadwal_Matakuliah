@@ -16,6 +16,10 @@ class PenjadwalanController extends Controller
 {
     public const SEMESTER_GANJIL = [1, 3, 5, 7];
 
+    public const SEMESTER_GENAP = [2, 4, 6, 8];
+
+    public const SEMESTER_ALL = [1, 2, 3, 4, 5, 6, 7, 8];
+
     public function index()
     {
         $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
@@ -65,6 +69,8 @@ class PenjadwalanController extends Controller
             'ruangan' => Ruangan::orderBy('kode')->get(),
             'ruanganAktif' => Ruangan::where('is_active', 1)->orderBy('kode')->get(),
             'semesterGanjil' => self::SEMESTER_GANJIL,
+            'semesterGenap' => self::SEMESTER_GENAP,
+            'semesterAll' => self::SEMESTER_ALL,
             'maksPilihan' => SchedulerService::MAKS_PILIHAN,
             'logGenerate' => session('log_generate', []),
         ]);
@@ -108,8 +114,9 @@ class PenjadwalanController extends Controller
     public function generate(Request $request, SchedulerService $scheduler)
     {
         $request->validate([
+            'periode' => ['nullable', 'string', Rule::in(['ganjil', 'genap', 'keduanya', 'custom'])],
             'semester' => ['required', 'array', 'min:1'],
-            'semester.*' => [Rule::in(self::SEMESTER_GANJIL)],
+            'semester.*' => ['integer', Rule::in(self::SEMESTER_ALL)],
             'prodi' => ['nullable', 'string', 'max:100'],
             'hari' => ['nullable', 'array'],
             'hari.*' => [Rule::in(SchedulerService::HARI)],
@@ -118,7 +125,7 @@ class PenjadwalanController extends Controller
             'meta' => ['nullable', 'array'],
         ]);
 
-        $semesters = $request->input('semester');
+        $semesters = array_map('intval', $request->input('semester'));
         $prodi = $request->input('prodi') ?: 'Informatika';
         $options = array_filter([
             'hari' => $request->input('hari'),
@@ -140,8 +147,17 @@ class PenjadwalanController extends Controller
             ];
         }
 
+        $periodeTarget = 'ganjil';
+        $hasGanjil = ! empty(array_intersect($semesters, self::SEMESTER_GANJIL));
+        $hasGenap = ! empty(array_intersect($semesters, self::SEMESTER_GENAP));
+        if ($hasGenap && ! $hasGanjil) {
+            $periodeTarget = 'genap';
+        }
+
         return redirect()
             ->route('penjadwalan.index')
+            ->with('tab_aktif', 'tab-jadwal')
+            ->with('periode_aktif', $periodeTarget)
             ->with('log_generate', $log)
             ->with('flash_success', 'Jadwal berhasil digenerate untuk semester '.implode(', ', $semesters).'.');
     }
@@ -189,7 +205,7 @@ class PenjadwalanController extends Controller
             ],
             'nama_mk' => ['required', 'string', 'max:150'],
             'sks' => ['required', 'integer', 'min:1', 'max:4'],
-            'semester' => ['required', 'integer', Rule::in(self::SEMESTER_GANJIL)],
+            'semester' => ['required', 'integer', Rule::in(self::SEMESTER_ALL)],
             'tipe' => ['required', Rule::in(['Wajib', 'Pilihan'])],
             'prodi' => ['required', 'string', 'max:100'],
             'dosen_ketua_id' => ['nullable', 'integer', 'exists:dosens,id'],
@@ -201,7 +217,7 @@ class PenjadwalanController extends Controller
             'kode_mk.unique' => 'Kode MK sudah dipakai mata kuliah lain.',
             'kode_mk.required' => 'Kode MK wajib diisi.',
             'nama_mk.required' => 'Nama MK wajib diisi.',
-            'semester.in' => 'Semester harus ganjil: 1, 3, 5, atau 7.',
+            'semester.in' => 'Semester harus bernilai antara 1 sampai 8.',
             'sks.max' => 'SKS maksimal 4.',
             'tipe.in' => 'Tipe harus Wajib atau Pilihan.',
             'dosen_ketua_id.exists' => 'Dosen ketua tidak ditemukan.',

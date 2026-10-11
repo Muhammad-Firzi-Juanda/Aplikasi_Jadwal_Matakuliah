@@ -150,11 +150,7 @@
                 <div class="tabs-header">
                     <button type="button" class="tab-btn active" data-tab="tab-input" onclick="showTab('tab-input', this)">Input Mata Kuliah</button>
                     <button type="button" class="tab-btn" data-tab="tab-generate" onclick="showTab('tab-generate', this)">Generate Jadwal</button>
-                    @foreach ($semesterGanjil as $sem)
-                        <button type="button" class="tab-btn" data-tab="tab-sem-{{ $sem }}" onclick="showTab('tab-sem-{{ $sem }}', this)">
-                            Semester {{ $sem }}
-                        </button>
-                    @endforeach
+                    <button type="button" class="tab-btn" data-tab="tab-jadwal" onclick="showTab('tab-jadwal', this)">Jadwal Semester</button>
                 </div>
 
                 {{-- ============ INPUT MATA KULIAH ============ --}}
@@ -269,12 +265,30 @@
                     <form action="{{ route('penjadwalan.generate') }}" method="POST" id="formGenerate">
                         @csrf
                         <div class="modal-form-row">
-                            <label>Semester yang dijadwalkan</label>
+                            <label>Pilihan Periode</label>
+                            <div class="modal-input-container" style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
+                                    <input type="radio" name="periode_radio" value="ganjil" style="width:auto;" checked onchange="updateSemesterCheckboxes('ganjil')">
+                                    Semester Ganjil (1, 3, 5, 7)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
+                                    <input type="radio" name="periode_radio" value="genap" style="width:auto;" onchange="updateSemesterCheckboxes('genap')">
+                                    Semester Genap (2, 4, 6, 8)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
+                                    <input type="radio" name="periode_radio" value="keduanya" style="width:auto;" onchange="updateSemesterCheckboxes('keduanya')">
+                                    Keduanya (1 s/d 8)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="modal-form-row">
+                            <label>Semester spesifik</label>
                             <div class="modal-input-container" style="display:flex; gap:16px; flex-wrap:wrap;">
-                                @foreach ($semesterGanjil as $sem)
-                                    <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
-                                        <input type="checkbox" name="semester[]" value="{{ $sem }}"
-                                            style="width:auto;" @checked($sem === 1)>
+                                @foreach ($semesterAll as $sem)
+                                    <label class="sem-check-label sem-{{ $sem % 2 === 1 ? 'ganjil' : 'genap' }}" style="display:flex; align-items:center; gap:6px; font-weight:400; cursor:pointer;">
+                                        <input type="checkbox" name="semester[]" value="{{ $sem }}" class="sem-check-input"
+                                            style="width:auto;" @checked($sem % 2 === 1)>
                                         Semester {{ $sem }}
                                     </label>
                                 @endforeach
@@ -366,59 +380,53 @@
                     @endif
                 </div>
 
-                {{-- ============ OUTPUT PER SEMESTER ============ --}}
-                @foreach ($semesterGanjil as $sem)
-                    <div class="tab-content" id="tab-sem-{{ $sem }}">
-                        <div class="tab-header">
-                            <h2>Jadwal Semester {{ $sem }}</h2>
+                {{-- ============ TAB JADWAL SEMESTER ============ --}}
+                <div class="tab-content" id="tab-jadwal">
+                    <div class="tab-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+                        <div>
+                            <h2 style="margin:0 0 4px 0;">Jadwal Semester</h2>
+                            <p style="margin:0; font-size:0.9rem; color:#64748b;">Lihat jadwal terstruktur per semester dalam mode Ganjil atau Genap.</p>
                         </div>
 
-                        @php
-                            $baris = $jadwal[$sem] ?? collect();
-                            $perHari = $baris->groupBy('hari');
-                        @endphp
+                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                            {{-- Filter Dropdown --}}
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label for="filterSemesterSelect" style="font-size:0.9rem; font-weight:600; color:#1e293b; white-space:nowrap;">Tampilkan:</label>
+                                <select id="filterSemesterSelect" onchange="filterSemester(this.value)" 
+                                    style="padding:7px 14px; border:1.5px solid #cbd5e1; border-radius:18px; font-size:0.9rem; outline:none; background:#ffffff; color:#1e293b; cursor:pointer;">
+                                    <option value="all">Semua Semester</option>
+                                    {{-- Options dynamically rendered by JS based on active toggle --}}
+                                </select>
+                            </div>
 
-                        @if ($baris->isEmpty())
-                            <p style="color:#666; padding:18px 0;">
-                                Belum ada jadwal untuk semester {{ $sem }}. Gunakan tab <strong>Generate Jadwal</strong>.
-                            </p>
-                        @else
-                            @foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
-                                @if (($perHari[$hari] ?? collect())->isNotEmpty())
-                                    <h3 style="margin:18px 0 8px; font-size:15px; color:#1e3a5f;">{{ $hari }}</h3>
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Jam</th>
-                                                <th>Kode MK</th>
-                                                <th>Nama MK</th>
-                                                <th>SKS</th>
-                                                <th>Kelas</th>
-                                                <th>Dosen</th>
-                                                <th>Ruangan</th>
-                                                <th>Tipe</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($perHari[$hari] as $j)
-                                                <tr>
-                                                    <td style="white-space:nowrap;">{{ substr($j->jam_mulai, 0, 5) }} - {{ substr($j->jam_selesai, 0, 5) }}</td>
-                                                    <td><strong>{{ $j->kode_mk }}</strong></td>
-                                                    <td>{{ $j->nama_mk }}</td>
-                                                    <td>{{ $j->sks }}</td>
-                                                    <td>{{ $j->kode_rombel }}</td>
-                                                    <td>{{ $j->nama_dosen ?? '-' }}</td>
-                                                    <td>{{ $j->kode_ruangan }}</td>
-                                                    <td>{{ $j->tipe }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                @endif
-                            @endforeach
-                        @endif
+                            {{-- Pill Toggle Ganjil | Genap --}}
+                            <div class="pill-toggle-container" style="display:inline-flex; background:#e2e8f0; padding:4px; border-radius:30px; user-select:none;">
+                                <button type="button" id="btnToggleGanjil" onclick="switchPeriode('ganjil')" 
+                                    style="padding:7px 20px; border:none; border-radius:24px; font-weight:700; font-size:0.9rem; cursor:pointer; transition:all 0.2s ease; background:#0860be; color:#ffffff; box-shadow:0 2px 4px rgba(8,96,190,0.25);">
+                                    Ganjil
+                                </button>
+                                <button type="button" id="btnToggleGenap" onclick="switchPeriode('genap')" 
+                                    style="padding:7px 20px; border:none; border-radius:24px; font-weight:700; font-size:0.9rem; cursor:pointer; transition:all 0.2s ease; background:transparent; color:#64748b;">
+                                    Genap
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                @endforeach
+
+                    {{-- Container Mode Ganjil (Semester 1, 3, 5, 7) --}}
+                    <div id="container-ganjil" class="periode-container">
+                        @foreach ($semesterGanjil as $sem)
+                            @include('penjadwalan.partials.jadwal-semester', ['sem' => $sem, 'jadwal' => $jadwal])
+                        @endforeach
+                    </div>
+
+                    {{-- Container Mode Genap (Semester 2, 4, 6, 8) --}}
+                    <div id="container-genap" class="periode-container" style="display:none;">
+                        @foreach ($semesterGenap as $sem)
+                            @include('penjadwalan.partials.jadwal-semester', ['sem' => $sem, 'jadwal' => $jadwal])
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -491,9 +499,16 @@
                     <label for="mkSemester">Semester</label>
                     <div class="modal-input-container">
                         <select id="mkSemester" name="semester" required>
-                            @foreach ($semesterGanjil as $s)
-                                <option value="{{ $s }}">Semester {{ $s }}</option>
-                            @endforeach
+                            <optgroup label="Semester Ganjil">
+                                @foreach ($semesterGanjil as $s)
+                                    <option value="{{ $s }}">Semester {{ $s }}</option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="Semester Genap">
+                                @foreach ($semesterGenap as $s)
+                                    <option value="{{ $s }}">Semester {{ $s }}</option>
+                                @endforeach
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -597,18 +612,36 @@
                     <label for="profile_password_lama">Password lama</label>
                     <div class="modal-input-container">
                         <input type="password" id="profile_password_lama" name="password_lama" placeholder="Isi jika ingin ganti password">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibilityModal('profile_password_lama', this)">
+                            <svg id="profile_password_lama_eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="modal-form-row">
                     <label for="profile_password_baru">Password Baru</label>
                     <div class="modal-input-container">
                         <input type="password" id="profile_password_baru" name="password_baru" placeholder="Kosongkan jika tidak diubah">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibilityModal('profile_password_baru', this)">
+                            <svg id="profile_password_baru_eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="modal-form-row">
                     <label for="profile_password_baru_confirmation">Konfirmasi Password Baru</label>
                     <div class="modal-input-container">
                         <input type="password" id="profile_password_baru_confirmation" name="password_baru_confirmation" placeholder="Ulangi password baru">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibilityModal('profile_password_baru_confirmation', this)">
+                            <svg id="profile_password_baru_confirmation_eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer-buttons">
@@ -626,15 +659,159 @@
 const MK_FORM_ACTION_STORE = "{{ route('penjadwalan.store') }}";
 const MK_FORM_ACTION_UPDATE = "{{ route('penjadwalan.update', ['mataKuliah' => '__ID__']) }}";
 
+let currentPeriode = 'ganjil';
+
 function showTab(id, btn) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if (btn) btn.classList.add('active');
+    
+    const targetContent = document.getElementById(id);
+    if (targetContent) targetContent.classList.add('active');
+    
+    const targetBtn = btn || document.querySelector(`.tab-btn[data-tab="${id}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    // Simpan tab aktif di localStorage
+    localStorage.setItem('penjadwalan_active_tab', id);
 }
 
-// openModal, closeModal dan penutupan backdrop sudah disediakan assets/js/app.js
+// Toggle Periode Ganjil / Genap pada Tab Jadwal Semester
+function switchPeriode(mode, saveState = true) {
+    currentPeriode = mode;
+    const btnGanjil = document.getElementById('btnToggleGanjil');
+    const btnGenap = document.getElementById('btnToggleGenap');
+    const cGanjil = document.getElementById('container-ganjil');
+    const cGenap = document.getElementById('container-genap');
 
+    if (mode === 'ganjil') {
+        btnGanjil.style.background = '#0860be';
+        btnGanjil.style.color = '#ffffff';
+        btnGanjil.style.boxShadow = '0 2px 4px rgba(8,96,190,0.25)';
+        btnGenap.style.background = 'transparent';
+        btnGenap.style.color = '#64748b';
+        btnGenap.style.boxShadow = 'none';
+
+        cGanjil.style.display = 'block';
+        cGenap.style.display = 'none';
+    } else {
+        btnGenap.style.background = '#0860be';
+        btnGenap.style.color = '#ffffff';
+        btnGenap.style.boxShadow = '0 2px 4px rgba(8,96,190,0.25)';
+        btnGanjil.style.background = 'transparent';
+        btnGanjil.style.color = '#64748b';
+        btnGanjil.style.boxShadow = 'none';
+
+        cGenap.style.display = 'block';
+        cGanjil.style.display = 'none';
+    }
+
+    updateFilterDropdown(mode);
+
+    if (saveState) {
+        localStorage.setItem('penjadwalan_periode', mode);
+        const url = new URL(window.location);
+        url.searchParams.set('periode', mode);
+        window.history.replaceState({}, '', url);
+    }
+}
+
+// Update opsi dropdown filter berdasarkan mode Ganjil/Genap
+function updateFilterDropdown(mode) {
+    const select = document.getElementById('filterSemesterSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="all">Semua Semester</option>';
+    const list = mode === 'ganjil' ? [1, 3, 5, 7] : [2, 4, 6, 8];
+
+    list.forEach(sem => {
+        const opt = document.createElement('option');
+        opt.value = sem;
+        opt.textContent = 'Semester ' + sem;
+        select.appendChild(opt);
+    });
+    select.value = 'all';
+
+    // Tampilkan kembali semua section di container aktif
+    filterSemester('all');
+}
+
+// Filter semester tertentu di tab jadwal
+function filterSemester(val) {
+    const activeContainer = currentPeriode === 'ganjil' ? document.getElementById('container-ganjil') : document.getElementById('container-genap');
+    if (!activeContainer) return;
+
+    const sections = activeContainer.querySelectorAll('.semester-section');
+    sections.forEach(sec => {
+        if (val === 'all' || sec.getAttribute('data-semester') === String(val)) {
+            sec.style.display = 'block';
+        } else {
+            sec.style.display = 'none';
+        }
+    });
+}
+
+// Accordion Collapse / Expand per Semester
+function toggleAccordion(sem) {
+    const body = document.getElementById('accordion-body-' + sem);
+    const chevron = document.getElementById('chevron-sem-' + sem);
+    if (!body || !chevron) return;
+
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        body.style.display = 'none';
+        chevron.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// Update Checkbox Semester di Tab Generate Jadwal
+function updateSemesterCheckboxes(mode) {
+    const checkboxes = document.querySelectorAll('.sem-check-input');
+    checkboxes.forEach(cb => {
+        const val = parseInt(cb.value);
+        if (mode === 'ganjil') {
+            cb.checked = (val % 2 === 1);
+        } else if (mode === 'genap') {
+            cb.checked = (val % 2 === 0);
+        } else if (mode === 'keduanya') {
+            cb.checked = true;
+        }
+    });
+}
+
+// Inisialisasi State Saat Halaman Dimuat
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Cek parameter session flash (setelah generate) atau URL query atau localStorage
+    const serverTab = "{{ session('tab_aktif') }}";
+    const serverPeriode = "{{ session('periode_aktif') }}";
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryPeriode = urlParams.get('periode');
+    const localPeriode = localStorage.getItem('penjadwalan_periode');
+    const localTab = localStorage.getItem('penjadwalan_active_tab');
+
+    // Tentukan periode awal
+    let targetPeriode = 'ganjil';
+    if (serverPeriode && (serverPeriode === 'ganjil' || serverPeriode === 'genap')) {
+        targetPeriode = serverPeriode;
+    } else if (queryPeriode && (queryPeriode === 'ganjil' || queryPeriode === 'genap')) {
+        targetPeriode = queryPeriode;
+    } else if (localPeriode && (localPeriode === 'ganjil' || localPeriode === 'genap')) {
+        targetPeriode = localPeriode;
+    }
+    switchPeriode(targetPeriode, false);
+
+    // Tentukan tab awal
+    let targetTab = 'tab-input';
+    if (serverTab && document.getElementById(serverTab)) {
+        targetTab = serverTab;
+    } else if (localTab && document.getElementById(localTab)) {
+        targetTab = localTab;
+    }
+    showTab(targetTab);
+});
+
+// Modal Tambah & Edit Mata Kuliah
 function openTambahMk() {
     const form = document.getElementById('formMk');
     form.action = MK_FORM_ACTION_STORE;

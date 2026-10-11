@@ -76,7 +76,7 @@ class MataKuliahImportService
             ['kode_mk', 'Ya', 'Kode unik, mis. TIF101'],
             ['nama_mk', 'Ya', 'Nama mata kuliah'],
             ['sks', 'Ya', '1-4'],
-            ['semester', 'Ya', '1, 3, 5, atau 7'],
+            ['semester', 'Ya', '1 sampai 8'],
             ['tipe', 'Ya', 'Wajib atau Pilihan'],
             ['prodi', 'Ya', 'mis. Informatika'],
             ['dosen_ketua', 'Tidak', 'Nama dosen atau ID. Kosong = tanpa dosen'],
@@ -252,8 +252,8 @@ class MataKuliahImportService
             $errors[] = 'sks harus 1-4.';
         }
 
-        if (! in_array((int) ($data['semester'] ?? 0), [1, 3, 5, 7], true)) {
-            $errors[] = 'semester harus 1, 3, 5, atau 7.';
+        if (! in_array((int) ($data['semester'] ?? 0), range(1, 8), true)) {
+            $errors[] = 'semester harus 1-8.';
         }
 
         if (! in_array($data['tipe'] ?? null, ['Wajib', 'Pilihan'], true)) {
