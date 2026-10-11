@@ -82,7 +82,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/penjadwalan/mata-kuliah/{mataKuliah}', [PenjadwalanController::class, 'destroy'])->name('penjadwalan.destroy');
         Route::post('/penjadwalan/generate', [PenjadwalanController::class, 'generate'])->name('penjadwalan.generate');
         Route::get('/penjadwalan/template', [PenjadwalanController::class, 'downloadTemplate'])->name('penjadwalan.template');
+        Route::post('/penjadwalan/import-preview', [PenjadwalanController::class, 'previewImport'])->name('penjadwalan.import.preview');
         Route::post('/penjadwalan/import', [PenjadwalanController::class, 'import'])->name('penjadwalan.import');
+        Route::delete('/penjadwalan/hapus-semua', [PenjadwalanController::class, 'destroyAll'])->name('penjadwalan.destroy-all');
     });
 
     // Admin Fakultas routes

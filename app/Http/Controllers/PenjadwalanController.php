@@ -111,6 +111,37 @@ class PenjadwalanController extends Controller
         return $this->kembali('Mata kuliah '.$kode.' berhasil dihapus.');
     }
 
+    public function destroyAll(Request $request)
+    {
+        $scope = $request->input('scope', 'all');
+
+        if ($scope === 'jadwal_only') {
+            DB::table('jadwals')->delete();
+            DB::table('rombels')->delete();
+
+            return redirect()
+                ->route('penjadwalan.index')
+                ->with('tab_aktif', 'tab-jadwal')
+                ->with('flash_success', 'Semua jadwal kuliah berhasil dihapus.');
+        }
+
+        // Hapus semua data jadwal, rombel, dan mata kuliah
+        DB::table('jadwals')->delete();
+        DB::table('rombels')->delete();
+
+        $query = MataKuliahDetail::query();
+        if (auth()->user()->role === 'Fakultas') {
+            $query->where('tipe', 'Fakultas');
+        }
+        $count = $query->count();
+        $query->delete();
+
+        return redirect()
+            ->route('penjadwalan.index')
+            ->with('tab_aktif', 'tab-input')
+            ->with('flash_success', 'Semua data mata kuliah ('.$count.' data) dan jadwal berhasil dihapus.');
+    }
+
     public function generate(Request $request, SchedulerService $scheduler)
     {
         $request->validate([
@@ -169,26 +200,69 @@ class PenjadwalanController extends Controller
         return response()->download($path, 'template-mata-kuliah.xlsx')->deleteFileAfterSend(true);
     }
 
+    public function previewImport(Request $request, MataKuliahImportService $importer)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (! in_array($extension, ['xlsx', 'xls', 'csv', 'ods', 'txt'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format file tidak didukung. Harap gunakan file .xlsx, .xls, .csv, atau .ods.',
+            ], 422);
+        }
+
+        try {
+            $path = $request->file('file')->getRealPath();
+            $data = $importer->preview($path);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca kolom spreadsheet: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function import(Request $request, MataKuliahImportService $importer)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
+            'file' => ['required', 'file', 'max:10240'],
+            'mapping' => ['nullable', 'array'],
+            'default_prodi' => ['nullable', 'string', 'max:100'],
+            'default_tipe' => ['nullable', 'string', 'in:Wajib,Pilihan'],
         ], [
-            'file.required' => 'Pilih file Excel dulu.',
-            'file.mimes' => 'File harus .xlsx, .xls, atau .csv.',
-            'file.max' => 'Ukuran file maksimal 5MB.',
+            'file.required' => 'Pilih file Excel atau Spreadsheet terlebih dahulu.',
+            'file.max' => 'Ukuran file maksimal 10MB.',
         ]);
 
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (! in_array($extension, ['xlsx', 'xls', 'csv', 'ods', 'txt'], true)) {
+            return redirect()->back()->with('flash_error', 'Format file tidak didukung. Harap unggah file .xlsx, .xls, .csv, atau .ods.');
+        }
+
         $path = $request->file('file')->getRealPath();
-        $hasil = $importer->import($path);
+        $mapping = $request->input('mapping') ?: [];
+        $defaults = [
+            'prodi' => $request->input('default_prodi') ?: 'Informatika',
+            'tipe' => $request->input('default_tipe') ?: 'Wajib',
+        ];
+
+        $hasil = $importer->import($path, $mapping, $defaults);
 
         if ($hasil['total'] === 0) {
-            return redirect()->back()->with('flash_error', 'File kosong atau tidak ada baris valid.');
+            return redirect()->back()->with('flash_error', 'File kosong atau tidak ada baris data valid.');
         }
 
         if (! empty($hasil['failed'])) {
             return redirect()->back()
-                ->with('flash_error', 'Import selesai dengan galat: '.$hasil['failed'][0].(count($hasil['failed']) > 1 ? ' (+'.(count($hasil['failed']) - 1).' galat lain)' : ''))
+                ->with('flash_error', 'Import selesai dengan catatan: '.$hasil['failed'][0].(count($hasil['failed']) > 1 ? ' (+'.(count($hasil['failed']) - 1).' galat lain)' : ''))
                 ->with('import_gagal', $hasil['failed'])
                 ->with('flash_success', "Import: {$hasil['created']} tambah, {$hasil['updated']} update.");
         }

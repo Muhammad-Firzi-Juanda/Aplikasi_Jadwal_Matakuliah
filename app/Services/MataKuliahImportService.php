@@ -5,11 +5,26 @@ namespace App\Services;
 use App\Models\Dosen;
 use App\Models\MataKuliahDetail;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class MataKuliahImportService
 {
+    public const TARGET_FIELDS = [
+        'kode_mk' => ['label' => 'Kode MK', 'required' => true],
+        'nama_mk' => ['label' => 'Nama Mata Kuliah', 'required' => true],
+        'sks' => ['label' => 'SKS', 'required' => true],
+        'semester' => ['label' => 'Semester', 'required' => true],
+        'tipe' => ['label' => 'Tipe (Wajib / Pilihan)', 'required' => false],
+        'prodi' => ['label' => 'Program Studi', 'required' => false],
+        'dosen_ketua' => ['label' => 'Dosen Ketua / Pengampu Utama', 'required' => false],
+        'dosen_anggota' => ['label' => 'Dosen Anggota / Pengampu 2', 'required' => false],
+        'jumlah_kelas' => ['label' => 'Jumlah Kelas', 'required' => false],
+        'kapasitas_per_kelas' => ['label' => 'Kapasitas per Kelas', 'required' => false],
+        'butuh_lab' => ['label' => 'Kebutuhan Laboratorium', 'required' => false],
+    ];
+
     public const HEADERS = [
         'kode_mk',
         'nama_mk',
@@ -25,17 +40,62 @@ class MataKuliahImportService
     ];
 
     protected array $aliases = [
-        'kode_mk' => ['kode_mk', 'kode mk', 'kode', 'code', 'kd_mk', 'kd mk', 'kode matkul', 'kode matakuliah'],
-        'nama_mk' => ['nama_mk', 'nama mk', 'nama', 'nama matkul', 'nama matakuliah', 'matkul', 'mata kuliah', 'name'],
-        'sks' => ['sks', 'bobot', 'kredit'],
-        'semester' => ['semester', 'smt', 'sem'],
-        'tipe' => ['tipe', 'type', 'jenis', 'kategori', 'sifat'],
-        'prodi' => ['prodi', 'program studi', 'program_studi', 'jurusan', 'study program'],
-        'dosen_ketua' => ['dosen_ketua', 'dosen ketua', 'ketua', 'dosen ketua pengampu', 'pengampu ketua', 'dosen utama', 'dosen1'],
-        'dosen_anggota' => ['dosen_anggota', 'dosen anggota', 'anggota', 'dosen pendamping', 'pengampu anggota', 'dosen kedua', 'dosen2'],
-        'jumlah_kelas' => ['jumlah_kelas', 'jumlah kelas', 'jml kelas', 'kelas', 'jml_kls', 'rombel', 'jumlah rombel'],
-        'kapasitas_per_kelas' => ['kapasitas_per_kelas', 'kapasitas per kelas', 'kapasitas', 'kapasitas kelas', 'kuota', 'daya tampung'],
-        'butuh_lab' => ['butuh_lab', 'butuh lab', 'lab', 'laboratorium', 'perlu lab', 'need_lab'],
+        'kode_mk' => [
+            'kode_mk', 'kode mk', 'kode', 'code', 'kd_mk', 'kd mk', 'kode matkul',
+            'kode matakuliah', 'kode mata kuliah', 'kd matkul', 'kd matakuliah',
+            'kd mata kuliah', 'course code', 'subject code', 'kdmk', 'kd_mkk',
+            'kode_matakuliah', 'kodemk', 'kd mk.', 'kode mk.', 'no mk', 'nomor mk',
+            'id mk', 'id matkul', 'kd_mata_kuliah', 'kode_mata_kuliah', 'course_code',
+        ],
+        'nama_mk' => [
+            'nama_mk', 'nama mk', 'nama', 'nama matkul', 'nama matakuliah', 'matkul',
+            'mata kuliah', 'mata_kuliah', 'matakuliah', 'name', 'course name', 'course',
+            'subject', 'nama mata pelajaran', 'course title', 'nama mata kuliah',
+            'nama_mata_kuliah', 'judul', 'judul mk', 'nama kursus', 'mata_pelajaran',
+        ],
+        'sks' => [
+            'sks', 'bobot', 'kredit', 'bobot sks', 'bobot_sks', 'credits', 'credit',
+            'sks mk', 'jml sks', 'jumlah sks', 'sks teori', 'sks praktikum', 'sks_mk',
+            'total sks', 'sks k', 'bobot kredit',
+        ],
+        'semester' => [
+            'semester', 'smt', 'sem', 'tingkat', 'term', 'smstr', 'semester ke',
+            'smt ke', 'sem ke', 'thn smt', 'sem.', 'smt.', 'semest',
+        ],
+        'tipe' => [
+            'tipe', 'type', 'jenis', 'kategori', 'sifat', 'status', 'wajib pilihan',
+            'wajib/pilihan', 'sifat mk', 'sifat mata kuliah', 'kelompok', 'kurikulum',
+            'w/p', 'w p', 'w_p', 'sifat_mk',
+        ],
+        'prodi' => [
+            'prodi', 'program studi', 'program_studi', 'jurusan', 'study program',
+            'departemen', 'dept', 'major', 'nama prodi', 'prodi/jurusan',
+        ],
+        'dosen_ketua' => [
+            'dosen_ketua', 'dosen ketua', 'ketua', 'dosen ketua pengampu', 'pengampu ketua',
+            'dosen utama', 'dosen1', 'dosen 1', 'dosen pengampu', 'dosen', 'pengampu',
+            'lecturer', 'pengajar', 'nama dosen', 'dosen penanggung jawab', 'dosen pengampu 1',
+            'pengampu 1', 'dosen pj', 'pj mk', 'penanggung jawab',
+        ],
+        'dosen_anggota' => [
+            'dosen_anggota', 'dosen anggota', 'anggota', 'dosen pendamping',
+            'pengampu anggota', 'dosen kedua', 'dosen2', 'dosen 2', 'pengampu 2',
+            'team teaching', 'dosen partner', 'anggota pengampu', 'dosen pengampu 2',
+        ],
+        'jumlah_kelas' => [
+            'jumlah_kelas', 'jumlah kelas', 'jml kelas', 'kelas', 'jml_kls', 'rombel',
+            'jumlah rombel', 'jml rombel', 'paralel', 'jumlah paralel', 'kelas paralel',
+            'kls', 'jml kls',
+        ],
+        'kapasitas_per_kelas' => [
+            'kapasitas_per_kelas', 'kapasitas per kelas', 'kapasitas', 'kapasitas kelas',
+            'kuota', 'daya tampung', 'target', 'seat', 'max siswa', 'kapasitas rombel',
+            'kapasitas rombel/kelas',
+        ],
+        'butuh_lab' => [
+            'butuh_lab', 'butuh lab', 'lab', 'laboratorium', 'perlu lab', 'need_lab',
+            'praktikum', 'ada praktikum', 'butuh praktikum', 'lab.',
+        ],
     ];
 
     public function templatePath(): string
@@ -44,20 +104,7 @@ class MataKuliahImportService
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('mata_kuliah');
 
-        $headers = [
-            'kode_mk',
-            'nama_mk',
-            'sks',
-            'semester',
-            'tipe',
-            'prodi',
-            'dosen_ketua',
-            'dosen_anggota',
-            'jumlah_kelas',
-            'kapasitas_per_kelas',
-            'butuh_lab',
-        ];
-
+        $headers = self::HEADERS;
         $sheet->fromArray([$headers], null, 'A1');
 
         $sheet->fromArray([
@@ -69,69 +116,509 @@ class MataKuliahImportService
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $panduan = $spreadsheet->createSheet();
-        $panduan->setTitle('panduan');
-        $panduan->fromArray([
-            ['Kolom', 'Wajib', 'Contoh / Keterangan'],
-            ['kode_mk', 'Ya', 'Kode unik, mis. TIF101'],
-            ['nama_mk', 'Ya', 'Nama mata kuliah'],
-            ['sks', 'Ya', '1-4'],
-            ['semester', 'Ya', '1 sampai 8'],
-            ['tipe', 'Ya', 'Wajib atau Pilihan'],
-            ['prodi', 'Ya', 'mis. Informatika'],
-            ['dosen_ketua', 'Tidak', 'Nama dosen atau ID. Kosong = tanpa dosen'],
-            ['dosen_anggota', 'Tidak', 'Nama dosen atau ID. Harus beda dari ketua'],
-            ['jumlah_kelas', 'Tidak', 'Default 1, maks 10'],
-            ['kapasitas_per_kelas', 'Tidak', 'Default 40, 10-200'],
-            ['butuh_lab', 'Tidak', 'Ya/Tidak, Y/N, 1/0, True/False'],
-            [],
-            ['Nama header fleksibel: kode, nama mk, smt, jenis, jurusan, ketua, anggota, kelas, kapasitas, lab tetap terbaca.'],
-            ['Baris kosong dilewati. Duplikat kode_mk di file: baris terakhir menang.'],
-            ['Data cocok by kode_mk: ada = update, belum ada = tambah.'],
-        ], null, 'A1');
-        $panduan->getColumnDimension('A')->setAutoSize(true);
-        $panduan->getColumnDimension('B')->setAutoSize(true);
-        $panduan->getColumnDimension('C')->setAutoSize(true);
-
         $path = tempnam(sys_get_temp_dir(), 'mk_template_').'.xlsx';
         (new Xlsx($spreadsheet))->save($path);
 
         return $path;
     }
 
-    public function import(string $path): array
+    /**
+     * Memuat spreadsheet dengan deteksi delimiter CSV yang akurat (koma, titik koma, atau tab).
+     */
+    public function loadSpreadsheet(string $path): Spreadsheet
     {
-        $spreadsheet = IOFactory::load($path);
-        $sheet = $spreadsheet->getSheet(0);
-        $rows = $sheet->toArray(null, true, true, false);
+        $reader = IOFactory::createReaderForFile($path);
+        if ($reader instanceof Csv) {
+            $sample = file_get_contents($path, false, null, 0, 8192) ?: '';
+            $commaCount = substr_count($sample, ',');
+            $semicolonCount = substr_count($sample, ';');
+            $tabCount = substr_count($sample, "\t");
+
+            if ($semicolonCount > $commaCount && $semicolonCount > $tabCount) {
+                $reader->setDelimiter(';');
+            } elseif ($tabCount > $commaCount && $tabCount > $semicolonCount) {
+                $reader->setDelimiter("\t");
+            } else {
+                $reader->setDelimiter(',');
+            }
+        }
+
+        return $reader->load($path);
+    }
+
+    /**
+     * Memilih sheet dengan data terbanyak dari spreadsheet.
+     */
+    public function getBestSheetData(Spreadsheet $spreadsheet): array
+    {
+        $bestRows = [];
+        $maxScore = -1;
+
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+            $rows = $sheet->toArray(null, true, true, false);
+            if (empty($rows)) {
+                continue;
+            }
+
+            $score = 0;
+            $nonEmptyCount = 0;
+            foreach ($rows as $row) {
+                if (! $this->isEmptyRow($row)) {
+                    $nonEmptyCount++;
+                    foreach ($row as $cell) {
+                        if ($this->matchField((string) $cell) !== null) {
+                            $score += 5;
+                        }
+                    }
+                }
+            }
+
+            $totalScore = $score + $nonEmptyCount;
+            if ($totalScore > $maxScore) {
+                $maxScore = $totalScore;
+                $bestRows = $rows;
+            }
+        }
+
+        return ! empty($bestRows) ? $bestRows : $spreadsheet->getSheet(0)->toArray(null, true, true, false);
+    }
+
+    /**
+     * Cari baris header pada data spreadsheet (memindai hingga 30 baris).
+     */
+    public function findHeaderRow(array $rows): int
+    {
+        $bestRowIndex = 0;
+        $bestMatchCount = 0;
+        $maxScan = min(30, count($rows));
+
+        for ($i = 0; $i < $maxScan; $i++) {
+            $row = $rows[$i] ?? [];
+            if ($this->isEmptyRow($row)) {
+                continue;
+            }
+
+            $matches = 0;
+            foreach ($row as $cell) {
+                if ($this->matchField((string) $cell) !== null) {
+                    $matches++;
+                }
+            }
+
+            if ($matches > $bestMatchCount) {
+                $bestMatchCount = $matches;
+                $bestRowIndex = $i;
+            }
+        }
+
+        return $bestRowIndex;
+    }
+
+    /**
+     * Cocokkan teks header sel dengan target field.
+     */
+    public function matchField(string $cellValue): ?string
+    {
+        $normalized = $this->normalize($cellValue);
+        if ($normalized === '') {
+            return null;
+        }
+
+        // 1. Exact alias matching
+        foreach ($this->aliases as $field => $names) {
+            foreach ($names as $name) {
+                if ($normalized === $this->normalize($name)) {
+                    return $field;
+                }
+            }
+        }
+
+        // 2. Substring matching: jika header mengandung kata kunci alias
+        // Urutkan kata kunci dari yang paling spesifik
+        foreach ($this->aliases as $field => $names) {
+            foreach ($names as $name) {
+                $normAlias = $this->normalize($name);
+                if (strlen($normAlias) >= 4 && str_contains($normalized, $normAlias)) {
+                    return $field;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Deteksi kolom secara cerdas berdasarkan nama header maupun inferensi isi konten (nilai data).
+     */
+    public function autoDetectHeaderMap(array $rows, int $headerRowIndex): array
+    {
+        $headerRow = $rows[$headerRowIndex] ?? [];
+        $headerMap = [];
+        $usedCols = [];
+
+        // 1. Pemetaan dari baris header
+        foreach (self::TARGET_FIELDS as $field => $info) {
+            foreach ($headerRow as $col => $value) {
+                if (in_array($col, $usedCols, true)) {
+                    continue;
+                }
+
+                $matched = $this->matchField((string) $value);
+                if ($matched === $field) {
+                    $headerMap[$field] = $col;
+                    $usedCols[] = $col;
+                    break;
+                }
+            }
+        }
+
+        // Cek baris berikutnya jika header menggunakan merged cells (misal baris 2 & 3)
+        if (isset($rows[$headerRowIndex + 1]) && ! empty(array_diff(['kode_mk', 'nama_mk', 'sks', 'semester'], array_keys($headerMap)))) {
+            $secondHeaderRow = $rows[$headerRowIndex + 1];
+            foreach (self::TARGET_FIELDS as $field => $info) {
+                if (isset($headerMap[$field])) {
+                    continue;
+                }
+                foreach ($secondHeaderRow as $col => $value) {
+                    if (in_array($col, $usedCols, true)) {
+                        continue;
+                    }
+                    $matched = $this->matchField((string) $value);
+                    if ($matched === $field) {
+                        $headerMap[$field] = $col;
+                        $usedCols[] = $col;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Analisis Inferensi Isi Konten (Value-Based Pattern Analysis)
+        // Jika ada kolom wajib yang belum terdeteksi dari header:
+        $dataRows = array_slice($rows, $headerRowIndex + 1, 20);
+        $totalCols = ! empty($headerRow) ? count($headerRow) : 0;
+        if ($totalCols === 0 && ! empty($dataRows)) {
+            $totalCols = count($dataRows[0]);
+        }
+
+        $scores = [];
+        for ($col = 0; $col < $totalCols; $col++) {
+            if (in_array($col, $usedCols, true)) {
+                continue;
+            }
+
+            $colScores = [
+                'kode_mk' => 0,
+                'nama_mk' => 0,
+                'sks' => 0,
+                'semester' => 0,
+                'dosen_ketua' => 0,
+                'tipe' => 0,
+            ];
+
+            $samples = [];
+            foreach ($dataRows as $r) {
+                $val = trim((string) ($r[$col] ?? ''));
+                if ($val !== '') {
+                    $samples[] = $val;
+                }
+            }
+
+            if (empty($samples)) {
+                continue;
+            }
+
+            foreach ($samples as $val) {
+                $cleanDigits = preg_replace('/[^0-9]/', '', $val);
+
+                // Pola Kode MK: 4-15 karakter alphanumeric, umumnya ada huruf dan angka
+                if (preg_match('/^[A-Za-z]{2,6}[0-9]{2,6}$/i', $val) || preg_match('/^[A-Za-z0-9\-_]{4,15}$/i', $val)) {
+                    if (! is_numeric($val) && strlen($val) <= 12) {
+                        $colScores['kode_mk'] += 4;
+                    }
+                }
+
+                // Pola SKS: angka 1-6 atau "3 SKS", "2 (1-1)"
+                if ((is_numeric($val) && (int) $val >= 1 && (int) $val <= 4) || preg_match('/^[1-4]\s*(sks|kredit)?$/i', $val)) {
+                    $colScores['sks'] += 3;
+                }
+
+                // Pola Semester: angka 1-8 atau "Smt 1", "Semester 3"
+                if ((is_numeric($val) && (int) $val >= 1 && (int) $val <= 8) || preg_match('/^(smt|semester|sem)\s*[1-8]$/i', $val)) {
+                    $colScores['semester'] += 3;
+                }
+
+                // Pola Nama MK: teks multi-kata atau string huruf > 6 karakter
+                if (strlen($val) >= 6 && ! is_numeric($val) && preg_match('/[a-zA-Z]/', $val)) {
+                    $colScores['nama_mk'] += 2;
+                }
+
+                // Pola Gelar Dosen
+                if (preg_match('/(s\.kom|m\.kom|dr\.|prof\.|m\.t\.|s\.t\.|m\.sc|ph\.d)/i', $val)) {
+                    $colScores['dosen_ketua'] += 5;
+                }
+
+                // Pola Tipe: Wajib / Pilihan / W / P
+                if (in_array(strtolower($val), ['w', 'p', 'wajib', 'pilihan'], true)) {
+                    $colScores['tipe'] += 4;
+                }
+            }
+
+            $scores[$col] = $colScores;
+        }
+
+        // Tentukan kolom wajib yang masih belum ada
+        foreach (['kode_mk', 'nama_mk', 'sks', 'semester', 'dosen_ketua', 'tipe'] as $neededField) {
+            if (isset($headerMap[$neededField])) {
+                continue;
+            }
+
+            $bestCol = null;
+            $bestScore = 0;
+            foreach ($scores as $col => $colScores) {
+                if (in_array($col, $usedCols, true)) {
+                    continue;
+                }
+                if ($colScores[$neededField] > $bestScore && $colScores[$neededField] >= 2) {
+                    $bestScore = $colScores[$neededField];
+                    $bestCol = $col;
+                }
+            }
+
+            if ($bestCol !== null) {
+                $headerMap[$neededField] = $bestCol;
+                $usedCols[] = $bestCol;
+            }
+        }
+
+        // Fallback cerdas: jika kode_mk atau nama_mk masih belum ketemu, ambil kolom teks pertama dan kedua
+        if (! isset($headerMap['kode_mk']) || ! isset($headerMap['nama_mk'])) {
+            $availableTextCols = [];
+            for ($col = 0; $col < $totalCols; $col++) {
+                if (! in_array($col, $usedCols, true)) {
+                    $availableTextCols[] = $col;
+                }
+            }
+
+            if (! isset($headerMap['kode_mk']) && count($availableTextCols) > 0) {
+                $headerMap['kode_mk'] = array_shift($availableTextCols);
+            }
+            if (! isset($headerMap['nama_mk']) && count($availableTextCols) > 0) {
+                $headerMap['nama_mk'] = array_shift($availableTextCols);
+            }
+        }
+
+        return $headerMap;
+    }
+
+    /**
+     * Membaca kolom dan sampel data dari spreadsheet.
+     */
+    public function preview(string $path): array
+    {
+        $spreadsheet = $this->loadSpreadsheet($path);
+        $rows = $this->getBestSheetData($spreadsheet);
 
         if (empty($rows)) {
-            return $this->result(0, 0, [], ['File kosong.']);
+            throw new \RuntimeException('File kosong.');
         }
 
-        $headerMap = $this->mapHeaders(array_shift($rows));
-        $missing = array_diff(['kode_mk', 'nama_mk', 'sks', 'semester', 'tipe', 'prodi'], array_keys($headerMap));
+        $headerRowIndex = $this->findHeaderRow($rows);
+        $headerRow = $rows[$headerRowIndex] ?? [];
+        $suggestedMapping = $this->autoDetectHeaderMap($rows, $headerRowIndex);
 
-        if (! empty($missing)) {
-            return $this->result(0, 0, [], [
-                'Header wajib hilang: '.implode(', ', $missing).'. Unduh template untuk contoh.',
-            ]);
+        $columns = [];
+        foreach ($headerRow as $colIdx => $colName) {
+            $name = trim((string) $colName);
+            if ($name === '') {
+                $name = 'Kolom '.($colIdx + 1);
+            }
+
+            $sample = '';
+            for ($r = $headerRowIndex + 1; $r < min($headerRowIndex + 6, count($rows)); $r++) {
+                if (isset($rows[$r][$colIdx]) && trim((string) $rows[$r][$colIdx]) !== '') {
+                    $sample = (string) $rows[$r][$colIdx];
+                    break;
+                }
+            }
+
+            $columns[] = [
+                'index' => $colIdx,
+                'name' => $name,
+                'sample' => $sample,
+            ];
         }
 
+        $previewRows = [];
+        for ($r = $headerRowIndex + 1; $r < count($rows) && count($previewRows) < 3; $r++) {
+            if (! $this->isEmptyRow($rows[$r])) {
+                $previewRows[] = array_map(fn ($v) => is_string($v) ? trim($v) : $v, $rows[$r]);
+            }
+        }
+
+        return [
+            'header_row_index' => $headerRowIndex + 1,
+            'total_rows' => max(0, count($rows) - ($headerRowIndex + 1)),
+            'columns' => $columns,
+            'suggested_mapping' => $suggestedMapping,
+            'preview_rows' => $previewRows,
+            'target_fields' => self::TARGET_FIELDS,
+        ];
+    }
+
+    /**
+     * Impor data mata kuliah dari file spreadsheet secara 100% otomatis.
+     */
+    public function import(string $path, array $mapping = [], array $defaults = []): array
+    {
+        $spreadsheet = $this->loadSpreadsheet($path);
+        $rows = $this->getBestSheetData($spreadsheet);
+
+        if (empty($rows)) {
+            return $this->result(0, 0, [], ['File kosong atau tidak memiliki data.']);
+        }
+
+        $headerRowIndex = $this->findHeaderRow($rows);
+
+        // Jika mapping disediakan (manual atau sebagian), gunakan mapping tersebut; jika tidak, gunakan auto-detect lengkap
+        if (! empty($mapping)) {
+            $headerMap = [];
+            foreach ($mapping as $field => $col) {
+                if ($col !== null && $col !== '') {
+                    $headerMap[$field] = (int) $col;
+                }
+            }
+            // Lengkapi dengan auto detect jika ada field wajib yang belum terpetakan
+            $autoMap = $this->autoDetectHeaderMap($rows, $headerRowIndex);
+            foreach ($autoMap as $f => $c) {
+                if (! isset($headerMap[$f])) {
+                    $headerMap[$f] = $c;
+                }
+            }
+        } else {
+            $headerMap = $this->autoDetectHeaderMap($rows, $headerRowIndex);
+        }
+
+        $defaultProdi = trim((string) ($defaults['prodi'] ?? 'Informatika')) ?: 'Informatika';
+        $defaultTipe = in_array($defaults['tipe'] ?? '', ['Wajib', 'Pilihan'], true) ? $defaults['tipe'] : 'Wajib';
+
+        $dataRows = array_slice($rows, $headerRowIndex + 1);
         $created = 0;
         $updated = 0;
         $failed = [];
         $seen = [];
 
-        foreach ($rows as $index => $row) {
-            $line = $index + 2;
+        // 1. Ekstrak tabel referensi inisial/kode dosen jika ada (misal tabel "Kode Dosen" - "Dosen")
+        $lecturerMap = [];
+        $isLecturerSection = false;
+        foreach ($dataRows as $r) {
+            $col1 = trim((string) ($r[$headerMap['kode_mk'] ?? 1] ?? ''));
+            $col2 = trim((string) ($r[$headerMap['nama_mk'] ?? 2] ?? ''));
+
+            if (strcasecmp($col1, 'kode dosen') === 0 || (strcasecmp($col1, 'kode dosen') === 0 && strcasecmp($col2, 'dosen') === 0)) {
+                $isLecturerSection = true;
+
+                continue;
+            }
+
+            if ($isLecturerSection && $col1 !== '' && $col2 !== '') {
+                $lecturerMap[$col1] = $col2;
+                Dosen::firstOrCreate(
+                    ['nama' => $col2],
+                    ['jabatan' => 'Ketua & Anggota', 'prodi' => $defaultProdi, 'is_active' => true]
+                );
+            }
+        }
+
+        // Hitung jumlah baris/kelas per kode_mk untuk menentukan jumlah paralel secara akurat
+        $kodeMkCounts = [];
+        $kodeCol = $headerMap['kode_mk'] ?? null;
+        if ($kodeCol !== null) {
+            foreach ($dataRows as $r) {
+                $rawKode = trim((string) ($r[$kodeCol] ?? ''));
+                if ($rawKode !== '' && ! in_array(strtolower($rawKode), ['kode mk', 'kode', 'kd mk', 'kdmk', 'kd_mk', 'no', 'kode dosen'], true) && ! isset($lecturerMap[$rawKode])) {
+                    $kodeMkCounts[$rawKode] = ($kodeMkCounts[$rawKode] ?? 0) + 1;
+                }
+            }
+        }
+
+        $lastSemester = null;
+        $inLecturerSection = false;
+
+        foreach ($dataRows as $index => $row) {
+            $line = $headerRowIndex + $index + 2;
 
             if ($this->isEmptyRow($row)) {
                 continue;
             }
 
-            $data = $this->extractRow($row, $headerMap);
-            $seen[$data['kode_mk'] ?? ''] = $line;
+            $checkKode = trim((string) ($row[$headerMap['kode_mk'] ?? 1] ?? ''));
+            $checkNama = trim((string) ($row[$headerMap['nama_mk'] ?? 2] ?? ''));
+
+            // Lewati jika baris ini merupakan sub-header di tengah sheet
+            if (in_array(strtolower($checkKode), ['kode mk', 'kode', 'kd mk', 'kdmk', 'kd_mk', 'no'], true)
+                || in_array(strtolower($checkNama), ['nama mk', 'nama mata kuliah', 'mata kuliah', 'matakuliah', 'pjmk'], true)) {
+                continue;
+            }
+
+            // Lewati tabel inisial/daftar dosen (bukan mata kuliah!)
+            if (strcasecmp($checkKode, 'kode dosen') === 0 || strcasecmp($checkNama, 'dosen') === 0) {
+                $inLecturerSection = true;
+
+                continue;
+            }
+            if ($inLecturerSection || (isset($lecturerMap[$checkKode]) && $checkNama === $lecturerMap[$checkKode])) {
+                continue;
+            }
+
+            // Lacak nilai semester terakhir untuk mendukung merged/grouped cell pada Excel
+            $semCol = $headerMap['semester'] ?? null;
+            if ($semCol !== null && isset($row[$semCol]) && trim((string) $row[$semCol]) !== '') {
+                $rawSemVal = trim((string) $row[$semCol]);
+                if (! in_array(strtolower($rawSemVal), ['semester', 'smt', 'sem'], true)) {
+                    $lastSemester = $rawSemVal;
+                }
+            }
+
+            $data = $this->extractRowWithDefaults($row, $headerMap, $defaultProdi, $defaultTipe, $index + 1, $lastSemester, $kodeMkCounts);
+
+            // Jika baris tidak memiliki kode_mk maupun nama_mk, anggap baris catatan/kosong
+            if (empty($data['kode_mk']) && empty($data['nama_mk'])) {
+                continue;
+            }
+
+            // Normalisasi kode MK jika berupa placeholder 'MK Pilihan...' dan ada kode kurikulum resmi
+            if (preg_match('/^mk\s*pilihan/i', $data['kode_mk'])) {
+                $aliasMap = [
+                    'ekonomi energi' => 'EEL13009',
+                    'pengolahan citra digital' => 'EEL13008',
+                    'radar dan navigasi' => 'EEL13007',
+                ];
+                $normNama = strtolower(trim($data['nama_mk']));
+                if (isset($aliasMap[$normNama])) {
+                    $data['kode_mk'] = $aliasMap[$normNama];
+                }
+            }
+
+            // Terjemahkan kode inisial dosen pengampu ke nama lengkap dosen jika ada di tabel referensi
+            if (! empty($data['dosen_ketua']) && isset($lecturerMap[$data['dosen_ketua']])) {
+                $data['dosen_ketua'] = $lecturerMap[$data['dosen_ketua']];
+            }
+            if (! empty($data['dosen_anggota']) && isset($lecturerMap[$data['dosen_anggota']])) {
+                $data['dosen_anggota'] = $lecturerMap[$data['dosen_anggota']];
+            }
+
+            // Jika kode_mk kosong tapi nama_mk ada, buat kode otomatis
+            if (empty($data['kode_mk'])) {
+                $data['kode_mk'] = 'MK'.str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
+            }
+
+            // Jika nama_mk kosong tapi kode_mk ada, gunakan kode sebagai nama
+            if (empty($data['nama_mk'])) {
+                $data['nama_mk'] = 'Mata Kuliah '.$data['kode_mk'];
+            }
+
+            $seen[$data['kode_mk']] = $line;
 
             $errors = $this->validateRow($data);
             if (! empty($errors)) {
@@ -154,10 +641,21 @@ class MataKuliahImportService
                 continue;
             }
 
+            // Jika dosen anggota teresolusi sama dengan ketua tapi nama teks aslinya berbeda
             if ($dosenKetuaId && $dosenKetuaId === $dosenAnggotaId) {
-                $failed[] = 'Baris '.$line.': dosen anggota harus berbeda dari dosen ketua.';
-
-                continue;
+                $namaKetua = trim((string) ($data['dosen_ketua'] ?? ''));
+                $namaAnggota = trim((string) ($data['dosen_anggota'] ?? ''));
+                if ($namaKetua !== '' && $namaAnggota !== '' && strcasecmp($namaKetua, $namaAnggota) !== 0) {
+                    $newDosen = Dosen::create([
+                        'nama' => $namaAnggota,
+                        'jabatan' => 'Anggota',
+                        'prodi' => $data['prodi'],
+                        'is_active' => true,
+                    ]);
+                    $dosenAnggotaId = $newDosen->id;
+                } else {
+                    $dosenAnggotaId = null;
+                }
             }
 
             $payload = [
@@ -168,9 +666,9 @@ class MataKuliahImportService
                 'prodi' => $data['prodi'],
                 'dosen_ketua_id' => $dosenKetuaId,
                 'dosen_anggota_id' => $dosenAnggotaId,
-                'jumlah_kelas' => isset($data['jumlah_kelas']) && $data['jumlah_kelas'] !== '' ? (int) $data['jumlah_kelas'] : 1,
-                'kapasitas_per_kelas' => isset($data['kapasitas_per_kelas']) && $data['kapasitas_per_kelas'] !== '' ? (int) $data['kapasitas_per_kelas'] : 40,
-                'butuh_lab' => $this->toBool($data['butuh_lab'] ?? null),
+                'jumlah_kelas' => isset($data['jumlah_kelas']) && $data['jumlah_kelas'] !== '' ? max(1, min(10, (int) $data['jumlah_kelas'])) : 1,
+                'kapasitas_per_kelas' => isset($data['kapasitas_per_kelas']) && $data['kapasitas_per_kelas'] !== '' ? max(10, min(200, (int) $data['kapasitas_per_kelas'])) : 40,
+                'butuh_lab' => (bool) ($data['butuh_lab'] ?? false),
                 'is_active' => true,
             ];
 
@@ -197,28 +695,7 @@ class MataKuliahImportService
         ];
     }
 
-    protected function mapHeaders(array $headerRow): array
-    {
-        $map = [];
-        foreach ($headerRow as $col => $value) {
-            $key = $this->normalize((string) $value);
-            if ($key === '') {
-                continue;
-            }
-            foreach ($this->aliases as $field => $names) {
-                foreach ($names as $name) {
-                    if ($key === $this->normalize($name)) {
-                        $map[$field] = $col;
-                        break 2;
-                    }
-                }
-            }
-        }
-
-        return $map;
-    }
-
-    protected function extractRow(array $row, array $headerMap): array
+    protected function extractRowWithDefaults(array $row, array $headerMap, string $defaultProdi, string $defaultTipe, int $rowIndex = 1, ?string $lastSemester = null, array $kodeMkCounts = []): array
     {
         $data = [];
         foreach ($headerMap as $field => $col) {
@@ -226,10 +703,85 @@ class MataKuliahImportService
             $data[$field] = is_string($value) ? trim($value) : $value;
         }
 
-        if (isset($data['tipe'])) {
-            $tipe = ucfirst(strtolower(trim((string) $data['tipe'])));
-            $data['tipe'] = $tipe === 'Pilihan' ? 'Pilihan' : ($tipe === 'Wajib' ? 'Wajib' : $data['tipe']);
+        // Jika sel semester kosong tetapi ada semester dari baris sebelumnya (merged cell)
+        if ((! isset($data['semester']) || $data['semester'] === null || trim((string) $data['semester']) === '') && $lastSemester !== null) {
+            $data['semester'] = $lastSemester;
         }
+
+        // Ekstraksi angka SKS secara cerdas (misal: "3 SKS", "3 (2-1)", "3", fallback: 3)
+        if (isset($data['sks']) && $data['sks'] !== null && trim((string) $data['sks']) !== '') {
+            $sksDigits = preg_replace('/[^0-9]/', '', (string) $data['sks']);
+            if ($sksDigits !== '') {
+                $num = (int) substr($sksDigits, 0, 1);
+                $data['sks'] = ($num >= 1 && $num <= 4) ? $num : 3;
+            } else {
+                $data['sks'] = 3;
+            }
+        } else {
+            $data['sks'] = 3;
+        }
+
+        // Ekstraksi angka Semester secara cerdas
+        if (isset($data['semester']) && $data['semester'] !== null && trim((string) $data['semester']) !== '') {
+            $rawSem = (string) $data['semester'];
+            if (str_contains(strtolower($rawSem), 'pilihan')) {
+                $data['tipe'] = 'Pilihan';
+                $data['semester'] = 6;
+            } else {
+                $semDigits = preg_replace('/[^0-9]/', '', $rawSem);
+                if ($semDigits !== '') {
+                    $num = (int) $semDigits;
+                    $data['semester'] = ($num >= 1 && $num <= 8) ? $num : 1;
+                } else {
+                    $data['semester'] = 1;
+                }
+            }
+        } else {
+            $data['semester'] = 1;
+        }
+
+        // Normalisasi Tipe
+        if (! empty($data['tipe'])) {
+            $tipeRaw = strtolower(trim((string) $data['tipe']));
+            if (str_starts_with($tipeRaw, 'p') || str_contains($tipeRaw, 'pilih')) {
+                $data['tipe'] = 'Pilihan';
+            } elseif (str_starts_with($tipeRaw, 'w') || str_contains($tipeRaw, 'wajib')) {
+                $data['tipe'] = 'Wajib';
+            } else {
+                $data['tipe'] = $defaultTipe;
+            }
+        } else {
+            $data['tipe'] = $defaultTipe;
+        }
+
+        // Normalisasi Prodi
+        if (empty($data['prodi'])) {
+            $data['prodi'] = $defaultProdi;
+        }
+
+        // Normalisasi Jumlah Kelas (mengutamakan total kemunculan baris kode_mk pada sheet jika ada kelas paralel)
+        if (! empty($data['kode_mk']) && isset($kodeMkCounts[$data['kode_mk']])) {
+            $data['jumlah_kelas'] = max(1, min(10, $kodeMkCounts[$data['kode_mk']]));
+        } elseif (isset($data['jumlah_kelas']) && $data['jumlah_kelas'] !== null && trim((string) $data['jumlah_kelas']) !== '') {
+            $jkDigits = preg_replace('/[^0-9]/', '', (string) $data['jumlah_kelas']);
+            $data['jumlah_kelas'] = $jkDigits !== '' ? max(1, min(10, (int) $jkDigits)) : 1;
+        } else {
+            $data['jumlah_kelas'] = 1;
+        }
+
+        // Normalisasi Kapasitas
+        if (isset($data['kapasitas_per_kelas']) && $data['kapasitas_per_kelas'] !== null && trim((string) $data['kapasitas_per_kelas']) !== '') {
+            $kapDigits = preg_replace('/[^0-9]/', '', (string) $data['kapasitas_per_kelas']);
+            $data['kapasitas_per_kelas'] = $kapDigits !== '' ? max(10, min(200, (int) $kapDigits)) : 40;
+        } else {
+            $data['kapasitas_per_kelas'] = 40;
+        }
+
+        // Deteksi Kebutuhan Laboratorium secara cerdas dari kolom tipe/jenis atau nama mata kuliah
+        $rawTipeOrJenis = (string) ($row[$headerMap['tipe'] ?? -1] ?? ($data['tipe'] ?? ''));
+        $rawNama = (string) ($data['nama_mk'] ?? '');
+        $isPraktikum = (bool) (preg_match('/(praktikum|lab|laboratorium)/i', $rawTipeOrJenis) || preg_match('/praktikum/i', $rawNama));
+        $data['butuh_lab'] = $isPraktikum || $this->toBool($data['butuh_lab'] ?? null);
 
         return $data;
     }
@@ -290,8 +842,18 @@ class MataKuliahImportService
             }
         }
 
-        $dosen = Dosen::where('nama', $value)->first()
-            ?? Dosen::where('nama', 'like', '%'.$value.'%')->first();
+        $dosen = Dosen::where('nama', $value)->first();
+        if ($dosen) {
+            return $dosen->id;
+        }
+
+        // Pencarian sebagian hanya jika panjang nama minimal 5 karakter agar inisial/kode dosen tidak bertabrakan
+        if (strlen($value) >= 5) {
+            $dosen = Dosen::where('nama', 'like', '%'.$value.'%')->first();
+            if ($dosen) {
+                return $dosen->id;
+            }
+        }
 
         if ($dosen) {
             return $dosen->id;
@@ -332,9 +894,9 @@ class MataKuliahImportService
     protected function normalize(string $value): string
     {
         $value = strtolower(trim($value));
-        $value = preg_replace('/[_-]+/', ' ', $value);
+        $value = preg_replace('/[_\-\.\:\/\(\)]+/', ' ', $value);
         $value = preg_replace('/\s+/', ' ', $value);
 
-        return $value;
+        return trim($value);
     }
 }

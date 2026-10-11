@@ -2,6 +2,222 @@
 
 @section('title', 'APJAD - Penjadwalan Otomatis')
 
+@push('styles')
+<style>
+/* ==========================================================================
+   Tab Generate Jadwal - Form Layout & Responsiveness
+   ========================================================================== */
+.generate-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px; /* Padding/gap vertikal antar baris seragam 20-24px */
+}
+
+.generate-form-row {
+    display: grid;
+    grid-template-columns: 190px 1fr; /* Kolom label tetap 180-200px, kolom input 1fr */
+    gap: 20px;
+    align-items: start; /* Rata atas */
+}
+
+.generate-form-label {
+    white-space: nowrap; /* Label nowrap */
+    color: var(--primary-blue, #0860be);
+    font-size: 0.95rem; /* Tidak lebih besar dari teks input */
+    font-weight: 700;
+    line-height: 1.5;
+    padding-top: 3px;
+    user-select: none;
+}
+
+.generate-form-label.label-input {
+    padding-top: 10px; /* Sejajar dengan teks di dalam input Prodi */
+}
+
+/* Radio Pilihan Periode */
+.generate-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px; /* Satu baris horizontal, gap 12px 28px */
+    align-items: center;
+    min-height: 28px;
+}
+
+.generate-radio-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Radio dan teks sejajar vertikal */
+    cursor: pointer;
+    white-space: nowrap; /* Setiap opsi white-space nowrap */
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--primary-blue, #0860be);
+    user-select: none;
+    transition: var(--transition, all 0.2s ease);
+}
+
+.generate-radio-item:hover {
+    color: var(--primary-blue-dark, #064b96);
+}
+
+.generate-radio-item input[type="radio"] {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary-blue, #0860be);
+    flex-shrink: 0;
+}
+
+/* Checkbox Grid (Semester spesifik, Hari tersedia, Jam tersedia) */
+.generate-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px 24px; /* Gap konsisten 10px 24px */
+    align-items: center;
+}
+
+.generate-check-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--text-main, #0f172a);
+    user-select: none;
+    transition: var(--transition, all 0.2s ease);
+}
+
+.generate-check-item:hover {
+    color: var(--primary-blue, #0860be);
+}
+
+.generate-check-item input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary-blue, #0860be);
+    flex-shrink: 0;
+}
+
+/* Input Prodi */
+.generate-input-wrap {
+    width: 100%;
+}
+
+.generate-input-wrap input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 10px);
+    font-size: 0.95rem;
+    font-family: var(--font-sans, inherit);
+    outline: none;
+    background: #ffffff;
+    color: var(--text-main, #0f172a);
+    transition: var(--transition, all 0.2s ease);
+}
+
+.generate-input-wrap input:focus {
+    border-color: var(--primary-blue, #0860be);
+    box-shadow: 0 0 0 3px rgba(8, 96, 190, 0.12);
+}
+
+/* Tombol Generate Sekarang */
+.generate-form-actions {
+    display: flex;
+    justify-content: flex-end; /* Rata kanan */
+    margin-top: 24px;          /* Margin atas 24px */
+    margin-bottom: 24px;       /* Margin bawah minimal 24px */
+}
+
+.btn-generate-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 28px; /* Padding nyaman */
+    background-color: var(--color-success, #10b981);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-md, 10px);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: var(--font-sans, inherit);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    transition: var(--transition, all 0.2s cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.btn-generate-submit:hover:not(:disabled) {
+    background-color: var(--color-success-hover, #059669);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.32);
+}
+
+.btn-generate-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-generate-submit:disabled,
+.btn-generate-submit[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Kotak Aturan yang Dijalankan */
+.generate-rules-box {
+    margin-top: 0;
+    padding: 16px 20px;
+    background: #f5f8fc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md, 8px);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Responsive Layar <= 768px */
+@media (max-width: 768px) {
+    .generate-form {
+        gap: 18px;
+    }
+
+    .generate-form-row {
+        grid-template-columns: 1fr; /* Satu kolom: label di atas input */
+        gap: 8px;
+    }
+
+    .generate-form-label,
+    .generate-form-label.label-input {
+        padding-top: 0;
+        white-space: normal;
+    }
+
+    .generate-radio-group {
+        gap: 10px 20px;
+    }
+
+    .generate-checkbox-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px 16px;
+    }
+
+    .generate-form-actions {
+        justify-content: stretch;
+    }
+
+    .btn-generate-submit {
+        width: 100%;
+    }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="admin-layout">
     <aside class="admin-sidebar">
@@ -158,21 +374,13 @@
                     <div class="tab-header">
                         <h2>Data Mata Kuliah</h2>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <a href="{{ route('penjadwalan.template') }}" class="btn-add" style="text-decoration:none; background:#0ea5e9;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                Template Excel
-                            </a>
                             <button type="button" class="btn-add" onclick="openModal('modalImportMk')" style="background:#16a34a;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="17 8 12 3 7 8"></polyline>
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
                                 </svg>
-                                Import Excel
+                                Import Excel / Spreadsheet
                             </button>
                             <button type="button" class="btn-add" onclick="openTambahMk()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -181,6 +389,17 @@
                                 </svg>
                                 Tambah MK
                             </button>
+                            @if ($mataKuliah->isNotEmpty())
+                                <button type="button" class="btn-add" onclick="openModalHapusSemua('all')" style="background:#dc2626;" title="Hapus semua data mata kuliah dan jadwal">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                    Hapus Semua Data
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -262,76 +481,76 @@
                         <h2>Generate Jadwal</h2>
                     </div>
 
-                    <form action="{{ route('penjadwalan.generate') }}" method="POST" id="formGenerate">
+                    <form action="{{ route('penjadwalan.generate') }}" method="POST" id="formGenerate" class="generate-form">
                         @csrf
-                        <div class="modal-form-row">
-                            <label>Pilihan Periode</label>
-                            <div class="modal-input-container" style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
-                                    <input type="radio" name="periode_radio" value="ganjil" style="width:auto;" checked onchange="updateSemesterCheckboxes('ganjil')">
+                        <div class="generate-form-row">
+                            <label class="generate-form-label">Pilihan Periode</label>
+                            <div class="generate-radio-group">
+                                <label class="generate-radio-item">
+                                    <input type="radio" name="periode_radio" value="ganjil" checked onchange="updateSemesterCheckboxes('ganjil')">
                                     Semester Ganjil (1, 3, 5, 7)
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
-                                    <input type="radio" name="periode_radio" value="genap" style="width:auto;" onchange="updateSemesterCheckboxes('genap')">
+                                <label class="generate-radio-item">
+                                    <input type="radio" name="periode_radio" value="genap" onchange="updateSemesterCheckboxes('genap')">
                                     Semester Genap (2, 4, 6, 8)
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:#0860be;">
-                                    <input type="radio" name="periode_radio" value="keduanya" style="width:auto;" onchange="updateSemesterCheckboxes('keduanya')">
+                                <label class="generate-radio-item">
+                                    <input type="radio" name="periode_radio" value="keduanya" onchange="updateSemesterCheckboxes('keduanya')">
                                     Keduanya (1 s/d 8)
                                 </label>
                             </div>
                         </div>
 
-                        <div class="modal-form-row">
-                            <label>Semester spesifik</label>
-                            <div class="modal-input-container" style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div class="generate-form-row">
+                            <label class="generate-form-label">Semester spesifik</label>
+                            <div class="generate-checkbox-grid">
                                 @foreach ($semesterAll as $sem)
-                                    <label class="sem-check-label sem-{{ $sem % 2 === 1 ? 'ganjil' : 'genap' }}" style="display:flex; align-items:center; gap:6px; font-weight:400; cursor:pointer;">
+                                    <label class="generate-check-item sem-check-label sem-{{ $sem % 2 === 1 ? 'ganjil' : 'genap' }}">
                                         <input type="checkbox" name="semester[]" value="{{ $sem }}" class="sem-check-input"
-                                            style="width:auto;" @checked($sem % 2 === 1)>
+                                            @checked($sem % 2 === 1)>
                                         Semester {{ $sem }}
                                     </label>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div class="modal-form-row">
-                            <label for="genProdi">Prodi</label>
-                            <div class="modal-input-container">
+                        <div class="generate-form-row">
+                            <label class="generate-form-label label-input" for="genProdi">Prodi</label>
+                            <div class="generate-input-wrap">
                                 <input type="text" id="genProdi" name="prodi" value="Informatika" required>
                             </div>
                         </div>
 
-                        <div class="modal-form-row">
-                            <label>Hari tersedia</label>
-                            <div class="modal-input-container" style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div class="generate-form-row">
+                            <label class="generate-form-label">Hari tersedia</label>
+                            <div class="generate-checkbox-grid">
                                 @foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
-                                    <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
-                                        <input type="checkbox" name="hari[]" value="{{ $hari }}" style="width:auto;" checked>
+                                    <label class="generate-check-item">
+                                        <input type="checkbox" name="hari[]" value="{{ $hari }}" checked>
                                         {{ $hari }}
                                     </label>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div class="modal-form-row">
-                            <label>Jam tersedia</label>
-                            <div class="modal-input-container" style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div class="generate-form-row">
+                            <label class="generate-form-label">Jam tersedia</label>
+                            <div class="generate-checkbox-grid">
                                 @foreach (['07:30', '10:00', '13:00', '14:50'] as $jam)
-                                    <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
-                                        <input type="checkbox" name="jam_mulai[]" value="{{ $jam }}" style="width:auto;" checked>
+                                    <label class="generate-check-item">
+                                        <input type="checkbox" name="jam_mulai[]" value="{{ $jam }}" checked>
                                         {{ $jam }}
                                     </label>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div class="modal-footer-buttons">
-                            <button type="submit" class="btn-modal-submit">Generate Sekarang</button>
+                        <div class="generate-form-actions">
+                            <button type="submit" class="btn-generate-submit btn-modal-submit" id="btnSubmitGenerate">Generate Sekarang</button>
                         </div>
                     </form>
 
-                    <div style="margin-top:16px; padding:14px; background:#f5f8fc; border-radius:8px; font-size:13px; line-height:1.7;">
+                    <div class="generate-rules-box">
                         <strong>Aturan yang dijalankan:</strong>
                         <ul style="margin:8px 0 0 18px;">
                             <li>Bentrok kelas tidak boleh &mdash; satu prodi+semester tidak punya 2 MK pada waktu sama.</li>
@@ -410,6 +629,17 @@
                                     Genap
                                 </button>
                             </div>
+
+                            @if ($jadwal->isNotEmpty())
+                                <button type="button" class="btn-add" onclick="openModalHapusSemua('jadwal_only')" 
+                                    style="background:#dc2626; padding:7px 16px; font-size:0.875rem;" title="Hapus semua jadwal kuliah yang telah di-generate">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                    Hapus Semua Jadwal
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -434,29 +664,63 @@
 
 {{-- ============ MODAL IMPORT MK ============ --}}
 <div class="modal-backdrop" id="modalImportMk">
-    <div class="modal-window">
+    <div class="modal-window" style="max-width: 520px;">
         <div class="modal-header-blue">
-            <h3>Import Mata Kuliah dari Excel</h3>
+            <h3>Import Mata Kuliah</h3>
         </div>
         <div class="modal-body">
-            <form action="{{ route('penjadwalan.import') }}" method="POST" enctype="multipart/form-data" class="modal-form">
+            <form action="{{ route('penjadwalan.import') }}" method="POST" enctype="multipart/form-data" class="modal-form" id="formImportSpreadsheet">
                 @csrf
-                <div class="modal-form-row">
-                    <label for="importFile">File Excel</label>
-                    <div class="modal-input-container">
-                        <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv" required>
+                <div class="modal-form-row" style="align-items: flex-start;">
+                    <label for="importFile" style="padding-top:8px;">File Spreadsheet</label>
+                    <div class="modal-input-container" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                        <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet" required>
+                        <span style="font-size:12px; color:#64748b;">Mendukung format: .xlsx, .xls, .csv, dan .ods (Google Sheets / Excel)</span>
                     </div>
                 </div>
-                <p style="font-size:13px; color:#475569; line-height:1.6;">
-                    Header fleksibel: <strong>kode / kode mk</strong>, <strong>nama mk</strong>, <strong>sks</strong>,
-                    <strong>smt / semester</strong>, <strong>jenis / tipe</strong>, <strong>jurusan / prodi</strong>,
-                    <strong>ketua / dosen ketua</strong>, <strong>anggota / dosen anggota</strong>,
-                    <strong>kelas / jumlah kelas</strong>, <strong>kapasitas</strong>, <strong>lab</strong>.
-                    Dosen baru otomatis dibuat. Data cocok by <strong>kode_mk</strong>.
-                </p>
-                <div class="modal-footer-buttons">
+
+                <div style="padding:12px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; font-size:13px; color:#0369a1; line-height:1.6; margin-top:8px;">
+                    <strong>Otomatis Membaca Kolom:</strong><br>
+                    Sistem akan membaca dan menyesuaikan posisi kolom secara otomatis (Kode MK, Nama Mata Kuliah, SKS, Semester, Tipe, Dosen, dll.). Anda tidak perlu mengatur kolom secara manual.
+                </div>
+
+                <div class="modal-footer-buttons" style="margin-top:20px;">
                     <button type="button" class="btn-modal-cancel" onclick="closeModal('modalImportMk')">Batal</button>
-                    <button type="submit" class="btn-modal-submit">Import</button>
+                    <button type="submit" class="btn-modal-submit" id="btnSubmitImport">Import Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ============ MODAL HAPUS SEMUA ============ --}}
+<div class="modal-backdrop" id="modalHapusSemua">
+    <div class="modal-window" style="max-width: 480px;">
+        <div class="modal-header-blue" style="background:#dc2626;">
+            <h3 id="modalHapusSemuaTitle">Konfirmasi Hapus Semua</h3>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:18px;">
+                <div style="width:40px; height:40px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <p id="modalHapusSemuaDesc" style="color:#334155; font-size:14px; line-height:1.6; margin:0;">
+                        Apakah Anda yakin ingin menghapus seluruh data? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                </div>
+            </div>
+            <form action="{{ route('penjadwalan.destroy-all') }}" method="POST" id="formHapusSemua">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="scope" id="hapusSemuaScope" value="all">
+                <div class="modal-footer-buttons" style="margin-top:16px;">
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal('modalHapusSemua')">Batal</button>
+                    <button type="submit" class="btn-modal-submit" style="background:#dc2626;" id="btnSubmitHapusSemua">Ya, Hapus Semua</button>
                 </div>
             </form>
         </div>
@@ -809,6 +1073,19 @@ document.addEventListener('DOMContentLoaded', function() {
         targetTab = localTab;
     }
     showTab(targetTab);
+
+    // Disabled state saat proses generate berjalan
+    const formGenerateEl = document.getElementById('formGenerate');
+    if (formGenerateEl) {
+        formGenerateEl.addEventListener('submit', function() {
+            const btn = document.getElementById('btnSubmitGenerate');
+            if (btn) {
+                setTimeout(function() {
+                    btn.disabled = true;
+                }, 10);
+            }
+        });
+    }
 });
 
 // Modal Tambah & Edit Mata Kuliah
@@ -854,5 +1131,39 @@ function konfirmasiHapus(event, kode) {
     }
     return true;
 }
+
+function openModalHapusSemua(scope) {
+    const scopeInput = document.getElementById('hapusSemuaScope');
+    const titleEl = document.getElementById('modalHapusSemuaTitle');
+    const descEl = document.getElementById('modalHapusSemuaDesc');
+
+    if (scope === 'jadwal_only') {
+        scopeInput.value = 'jadwal_only';
+        titleEl.textContent = 'Hapus Semua Hasil Jadwal';
+        descEl.innerHTML = 'Apakah Anda yakin ingin <strong>menghapus semua hasil jadwal kuliah yang telah di-generate</strong>? Data mata kuliah tetap aman tersimpan.';
+    } else {
+        scopeInput.value = 'all';
+        titleEl.textContent = 'Hapus Semua Data Mata Kuliah dan Jadwal ?';
+        descEl.innerHTML = 'Apakah Anda yakin ingin <strong>menghapus seluruh data mata kuliah beserta seluruh jadwal</strong>? Semua baris data akan dibersihkan dan tindakan ini tidak dapat dibatalkan.';
+    }
+
+    openModal('modalHapusSemua');
+}
+
+// Disabled state saat submit impor berjalan
+document.addEventListener('DOMContentLoaded', function() {
+    const formImportEl = document.getElementById('formImportSpreadsheet');
+    if (formImportEl) {
+        formImportEl.addEventListener('submit', function() {
+            const btn = document.getElementById('btnSubmitImport');
+            if (btn) {
+                setTimeout(function() {
+                    btn.disabled = true;
+                    btn.textContent = 'Memproses Impor...';
+                }, 10);
+            }
+        });
+    }
+});
 </script>
 @endpush

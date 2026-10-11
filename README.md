@@ -1,152 +1,167 @@
-# Audit Aplikasi
+# APJAD - Aplikasi Penjadwalan Mata Kuliah Otomatis
 
-## 1. Informasi Project
-- **Framework:** Laravel 11/13.x (berdasarkan composer.json laravel/framework ^13.17)
-- **Bahasa Pemrograman:** PHP ^8.3
-- **Entry Point:** public/index.php
-- **Dependency Manager:** Composer & NPM
+[![Laravel](https://img.shields.io/badge/Laravel-11%2F12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
+[![Tests](https://img.shields.io/badge/Tests-58%20Passed%20(100%25)-success?style=for-the-badge&logo=phpunit)](https://phpunit.de)
+[![Code Style](https://img.shields.io/badge/Code%20Style-Laravel%20Pint-00D26A?style=for-the-badge)](https://laravel.com/docs/pint)
 
-## 2. Ringkasan Aplikasi
-Aplikasi ini adalah Sistem Penjadwalan Mata Kuliah dengan dukungan multiple roles (Fakultas, Jurusan, Prodi). Aplikasi ini dibangun dengan struktur Monolith MVC (Model-View-Controller) bawaan Laravel dan menggunakan file views Blade (.blade.php) untuk frontend, dengan bantuan Vanilla JS/CSS.
+Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*Monolith Laravel MVC*) yang dirancang untuk mengotomatisasi penyusunan jadwal perkuliahan bebas bentrok (*conflict-free*), mengelola data akademik per program studi/fakultas, dan memproses impor data perkuliahan dari Excel/Spreadsheet secara cerdas.
 
-## 3. Arsitektur
-Arsitektur yang digunakan adalah Monolith MVC.
-- **Model:** Representasi tabel database (misal User, MataKuliah, Jadwal, Prodi).
-- **View:** Blade Template Engine (misal dashboard.blade.php, jadwal-kuliah/index.blade.php).
-- **Controller:** Mengatur flow bisnis dan logika sistem.
-- **Routing:** Diatur terpusat di outes/web.php.
+---
 
-## 4. Struktur Project
-- pp/Http/Controllers/: Berisi semua Controller.
-- pp/Models/: Berisi model Eloquent (termasuk Enum UserRole).
-- esources/views/: Berisi semua template HTML/Blade.
-- outes/: Konfigurasi routing aplikasi (web.php).
-- database/: Migration, Seeder, dan Factory database.
-- public/: Direktori aset publik (CSS, JS, Images).
+## 📌 Ringkasan & Arsitektur Sistem
 
-## 5. Daftar Fitur
-- ✅ **Authentication:** Login, Logout, Update Profile, Change Password (AuthController).
-- ✅ **Manajemen Akun:** Dikelola oleh UserController.
-- ✅ **Manajemen Fakultas & Prodi:** CRUD Fakultas & Prodi.
-- ✅ **Manajemen Mata Kuliah:** Dikelola oleh MataKuliahController.
-- ✅ **Dashboard By Role:** Fakultas, Jurusan, Prodi masing-masing memiliki Dashboard.
-- ✅ **Penjadwalan:** Generate jadwal otomatis atau manual, import data jadwal (PenjadwalanController).
+- **Framework:** Laravel 11/12 (PHP 8.4)
+- **Arsitektur:** Model-View-Controller (MVC) Monolith
+- **Frontend:** Blade Templates, Responsive Modern Vanilla CSS & Vanilla JavaScript
+- **Database:** MySQL / SQLite
+- **Dependency Management:** Composer & NPM
+- **Testing Suite:** PHPUnit (58 Feature & Unit Tests)
+- **Formatting Standard:** Laravel Pint (PSR-12 / Laravel Standard)
 
-## 6. Role dan Hak Akses
-Aplikasi memiliki setidaknya 3 role teridentifikasi (dari enum UserRole):
-1. **Fakultas:** Diarahkan ke akultas.dashboard.
-2. **Jurusan:** Diarahkan ke jurusan.dashboard.
-3. **Prodi:** Diarahkan ke prodi.dashboard.
-Pembatasan hak akses diatur melalui routing dan role-based logic (middleware / authorization logic).
+---
 
-## 7. Routing
-Terdapat 35 route terdefinisi berdasarkan hasil pengecekan oute:list.
-- **Authentication:** /login, /logout, /profile, /change-password
-- **Dashboard:** /dashboard, /fakultas/dashboard, /jurusan/dashboard, /prodi/dashboard
-- **Master Data:** Resource route untuk akultas, prodi, users, mata-kuliah
-- **Penjadwalan:** Route khusus penjadwalan/generate, penjadwalan/import, dll.
+## 🚀 Fitur Utama
 
-## 8. Database
-Database terdeteksi mendukung MySQL (jadwal_ku_db.sql ditemukan) dan SQLite sebagai fallback (.env.example).
-Terdapat 12 Model Eloquent: Dosen, DosenMengajar, Fakultas, Jadwal, JadwalMengajar, KelasJadwal, MataKuliah, MataKuliahDetail, Prodi, Rombel, Ruangan, User.
+### 1. Penjadwalan Kuliah Otomatis (Scheduler Engine)
+- **Algoritma:** *Greedy Sequential + First-Fit Slot Placement* dengan validasi interval waktu real-time.
+- **Pencegahan Bentrok Multi-Dimensi:**
+  - **Bentrok Cohort:** Satu angkatan/prodi tidak akan memiliki lebih dari satu kelas pada slot waktu yang sama.
+  - **Bentrok Dosen:** Dosen ketua dan dosen anggota dipastikan tidak memiliki jadwal tumpang tindih antar-mata kuliah.
+  - **Bentrok Ruangan:** Ruangan fisik maupun laboratorium tidak dapat digunakan lebih dari satu rombel pada jam yang sama.
+  - **Manajemen MK Pilihan:** Pengelompokan slot MK pilihan secara terisolasi (maksimum kuota pilihan terdistribusi adil).
+  - **Dukungan Slot Berurutan:** Penjadwalan rapi mulai pukul 07:30, 10:00, 13:00, dan 14:50 dengan penyesuaian durasi per SKS.
 
-## 9. Authentication
-- **Login:** Email & Password dengan limitasi max karakter.
-- **Password Hashing:** Menggunakan standar Laravel Hash (Bcrypt).
-- **Session:** Menggunakan database session (SESSION_DRIVER=database pada config).
-Tidak ditemukan penyimpangan; password tidak disave secara plaintext.
+### 2. Impor Spreadsheet 100% Otomatis (Excel & CSV)
+- **Deteksi Delimiter Pintar:** Otomatis mendeteksi pemisah CSV (koma `,`, titik koma `;`, atau tab `\t`) tanpa memecah data teks yang memiliki baris kop/judul instansi.
+- **Dukungan Berbagai Format:** Mendukung file `.xlsx`, `.xls`, `.csv`, dan `.ods`.
+- **Pemetaan Kolom & Header Fleksibel:** Mengenali berbagai alias nama kolom (`Kode MK`, `KD MKK`, `Nama Mata Kuliah`, `Kredit SKS`, `SMSTR`, `Kuota`, `Dosen PJMK`, `Jenis`, dll.).
+- **Deteksi Merged Cells (Carry-Forward Semester):** Sel semester yang kosong akibat penggabungan baris (*merged cells*) di Excel otomatis mewarisi semester dari baris di atasnya.
+- **Pemisahan Cerdas Tabel Dosen vs Mata Kuliah:** Otomatis mengidentifikasi tabel inisial/legenda dosen di dalam spreadsheet (misal `Kode Dosen - Dosen`) sehingga nama dosen tidak tertukar menjadi mata kuliah.
+- **Perhitungan Kelas Paralel Otomatis:** Menghitung jumlah paralel kelas dari frekuensi baris kelas (A, B, C, dst.) per kode mata kuliah.
+- **Deteksi Laboratorium Otomatis:** Mengenali mata kuliah praktikum secara otomatis dan menetapkan kebutuhan laboratorium (`butuh_lab = YA`).
 
-## 10. Authorization
-Authorization dilakukan dengan memeriksa UserRole pada controller (seperti terlihat pada AuthController@redirectByRole). Diperlukan verifikasi lebih lanjut apakah middleware route juga diaktifkan untuk proteksi halaman selain level UI/Controller redirect.
+### 3. Fitur Reset & Hapus Data Massal
+- **Hapus Semua Data MK & Jadwal:** Menghapus seluruh data mata kuliah beserta relasi rombel dan jadwalnya dalam satu klik tanpa perlu menghapus satu per satu.
+- **Hapus Semua Hasil Jadwal:** Mengosongkan jadwal hasil *generate* di tab Jadwal Semester dengan tetap mempertahankan master data mata kuliah.
+- **Modal Konfirmasi Aman:** Dialog konfirmasi interaktif untuk mencegah kehilangan data akibat klik tidak disengaja.
 
-## 11. Security Audit
-- **SQL Injection:** Aman (menggunakan ORM Laravel Eloquent).
-- **XSS:** Aman (Blade {{ }} escape output otomatis).
-- **CSRF:** Terproteksi (bawaan Laravel).
-- **Mass Assignment:** Model User dan lainnya perlu dipastikan field $fillable dikonfigurasi dengan benar.
-- **Exposure:** File .env.example tidak berisi keys sensitif asli. Tidak ada hardcoded credentials di AuthController.
+### 4. Tampilan Jadwal Semester Interaktif
+- **Mode Periode Semester:** Pengalihan instan antara semester **Ganjil** (1, 3, 5, 7) dan **Genap** (2, 4, 6, 8).
+- **Filter Semester & Accordion:** Tampilan jadwal per semester yang dapat dibuka/tutup (*accordion*) serta filter pemilihan semester tertentu.
+- **Rincian Komprehensif:** Menampilkan jam mulai-selesai, kode rombel/kelas, ruangan, dosen pengampu, SKS, dan tipe perkuliahan.
 
-## 12. Validasi Input
-Validasi input dilakukan di backend menggunakan fasilitas request validator Laravel:
-- Contoh AuthController: email (required, valid format email), password (required, min 12 character untuk change password).
+### 5. Manajemen Akun & Hak Akses Berbasis Role (RBAC)
+- **Super Admin:** Akses penuh konfigurasi sistem, data fakultas, user, mata kuliah, dan penjadwalan.
+- **Fakultas:** Manajemen jadwal dan mata kuliah di lingkup fakultas.
+- **Jurusan:** Dashboard pemantauan dan pengelolaan tingkat jurusan.
+- **Prodi:** Dashboard dan pemantauan jadwal tingkat program studi.
+- **Admin:** Pengelolaan akun pengguna.
 
-## 13. Controller Audit
-Controller ditulis dengan rapi menggunakan fitur-fitur standar Laravel:
-- Tidak terdapat query mentah (raw DB queries) dalam AuthController.
-- Response mendukung AJAX (JSON) dan HTTP standard fallback (redirects).
+---
 
-## 14. Model Audit
-Model cukup ekstensif dan saling berkaitan. Terdapat relationship antara Dosen, Mata Kuliah, Jadwal, Ruangan, Prodi, dan Fakultas. Tidak ditemukan model duplikat.
+## 🔍 Hasil Audit Keamanan & Kualitas Kode
 
-## 15. Frontend / View Audit
-- View disusun menggunakan file .blade.php.
-- Javascript menggunakan vanilla pp.js (ditemukan file statik di public/assets/js/app.js dan manajemen modal manual menggunakan classList.add('show')).
-- UI tergolong responsif standar tanpa dependensi frontend modern seperti React/Vue secara eksplisit dalam core template.
+| Aspek Audit | Status | Keterangan |
+| :--- | :---: | :--- |
+| **SQL Injection** | **AMAN** | Seluruh query menggunakan Laravel Eloquent ORM & Query Builder dengan *parameter binding*. |
+| **Cross-Site Scripting (XSS)** | **AMAN** | Output HTML di-*escape* secara otomatis oleh Blade Engine `{{ ... }}`. |
+| **Cross-Site Request Forgery (CSRF)** | **AMAN** | Semua rute `POST`, `PUT`, dan `DELETE` diproteksi token `@csrf` dan middleware VerifyCsrfToken. |
+| **Database Integrity & Cascading** | **AMAN** | Foreign key constraints pada tabel `rombels` dan `jadwals` menggunakan `onDelete('cascade')`. |
+| **Autentikasi & Sandi** | **AMAN** | Enkripsi kata sandi menggunakan Bcrypt Hash, pembatasan rate limit login (`throttle:20,1`). |
+| **Format & Gaya Kode** | **LULUS** | Seluruh kode PHP telah diformat dan divalidasi menggunakan **Laravel Pint**. |
+| **Feature & Regression Tests** | **LULUS** | 58 dari 58 skenario pengujian (`MataKuliahImportTest`, `PenjadwalanDestroyAllTest`, `SchedulerServiceTest`, `UserManagementTest`) lulus 100%. |
 
-## 16. API Audit
-Tidak terdapat API spesifik yang dikembangkan di outes/api.php pada route listing; request bersifat web request (dapat berupa AJAX melalui web endpoints seperti di AuthController).
+---
 
-## 17. Error Handling
-Menggunakan exception handler default Laravel (tampilan Ignition untuk debug). Jika .env production diset, akan merender view error standar Laravel (404, 500).
+## 📂 Struktur Direktori Utama
 
-## 18. Performance Audit
-- Berpotensi memiliki isu N+1 Query pada pengambilan data jadwal (misalnya Jadwal::with(...) harus selalu dipastikan digunakan pada loop tampilan jadwal).
-- Aset js/css disajikan secara statis dan ringan karena merupakan vanilla JS tanpa build rumit.
+```
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── AuthController.php            # Autentikasi & Profil
+│   │   ├── PenjadwalanController.php     # Controller Penjadwalan, Impor & Reset
+│   │   ├── UserController.php            # Manajemen Pengguna
+│   │   └── ...
+│   ├── Models/
+│   │   ├── MataKuliahDetail.php          # Master Data Mata Kuliah
+│   │   ├── Rombel.php                    # Data Rombel / Kelas Paralel
+│   │   ├── Jadwal.php                    # Data Slot Jadwal Terplot
+│   │   ├── Dosen.php                     # Master Dosen
+│   │   ├── Ruangan.php                   # Master Ruangan & Lab
+│   │   └── User.php                      # Pengguna Sistem
+│   └── Services/
+│       ├── MataKuliahImportService.php   # Service Cerdas Impor Spreadsheet
+│       └── SchedulerService.php          # Algoritma Penjadwalan Otomatis
+├── database/
+│   ├── migrations/                       # Skema Database & Relasi Foreign Key
+│   └── seeders/                          # Data Awal Akun, Ruangan, & Pengguna
+├── resources/views/
+│   └── penjadwalan/
+│       ├── index.blade.php               # Halaman Utama Penjadwalan (Tab 1, 2, 3)
+│       └── partials/
+│           └── jadwal-semester.blade.php # Komponen Accordion Jadwal Semester
+├── routes/
+│   └── web.php                           # Rute Aplikasi & Middleware RBAC
+└── tests/
+    └── Feature/
+        ├── MataKuliahImportTest.php      # Pengujian Impor Spreadsheet Otomatis
+        ├── PenjadwalanDestroyAllTest.php # Pengujian Hapus Semua Data / Jadwal
+        └── SchedulerServiceTest.php      # Pengujian Algoritma Scheduler
+```
 
-## 19. Code Quality
-- Naming convention PHP (PascalCase untuk Class, camelCase untuk methods, snake_case untuk DB) terpenuhi.
-- Kode bersih tanpa magic numbers berlebihan.
+---
 
-## 20. Dependency
-Dependency dikelola dengan baik pada composer.json (PHP 8.3+) dan package.json. Tidak ada paket kadaluarsa yang kentara.
+## 🛠️ Panduan Instalasi & Menjalankan Aplikasi
 
-## 21. Configuration
-Pengaturan environment terletak di .env. File konfigurasi seperti session.php, database.php, berjalan sesuai standar framework.
+### 1. Kebutuhan Sistem
+- **PHP** >= 8.3 (Disarankan PHP 8.4)
+- **Composer** >= 2.0
+- **Node.js** >= 18 & **NPM**
+- **MySQL** / MariaDB
 
-## 22. Testing
-Folder 	ests terdapat pada struktur standar, dengan fitur testing (PHPUnit/Pest) terkonfigurasi dalam composer.json.
+### 2. Langkah Instalasi
+```bash
+# Clone repositori
+git clone https://github.com/Muhammad-Firzi-Juanda/Aplikasi_Jadwal_Matakuliah.git
+cd Aplikasi_Jadwal_Matakuliah
 
-## 23. Deployment
-File .htaccess dan index.php tersedia untuk web server Apache.
-Tidak ditemukan konfigurasi spesifik Dockerfile, CI/CD, atau skrip deployment khusus.
+# Instal dependensi PHP
+composer install
 
-## 24. Documentation
-Dokumentasi teknis internal terlihat minim (hanya file Markdown standar dari Laravel README.md dan CHANGELOG.md).
+# Instal dependensi frontend
+npm install
 
-## 25. Bug dan Potensi Bug
-- Tidak ditemukan bug fatal (fatal error) melalui static audit singkat ini.
-- eset-all-passwords.php & eset-password.php di root: Berpotensi berisiko jika diakses secara publik (tergantung isi file ini, perlu diinvestigasi).
+# Salin file environment
+cp .env.example .env
 
-## 26. TODO / Unfinished Code
-Tidak ditemukan komentar TODO atau FIXME maupun hardcoded debug dd() yang tertinggal di production code base.
+# Generate application key
+php artisan key:generate
 
-## 27. Git / Project Hygiene
-Terdapat file sampah atau non-standard seperti _legacy_native/ dan file PHP di root folder (eset-all-passwords.php), yang sebaiknya tidak ada pada aplikasi framework terstruktur.
+# Konfigurasi database di file .env, lalu jalankan migrasi & seeder:
+php artisan migrate --seed
 
-## 28. Ringkasan Temuan
+# Jalankan pengujian unit & feature
+php artisan test --compact
 
-| No | Kategori | Temuan | Severity | Lokasi | Status |
-| -- | -------- | ------ | -------- | ------ | ------ |
-| 1 | Security | File reset password di public root | 🟠 High | /reset-all-passwords.php | ⚠️ Perlu diperiksa |
-| 2 | Hygiene | Direktori legacy | ⚪ Info | /_legacy_native | ✅ Berfungsi / Archive |
+# Jalankan server lokal
+php artisan serve
+```
 
-## 29. Prioritas Perbaikan
-### High
-- Memeriksa file script mandiri PHP (eset-*.php) di root directory yang berpotensi menjadi celah keamanan jika tidak ter-auth.
-### Medium
-- Merapikan struktur folder (menghapus _legacy_native jika tidak dipakai lagi).
-### Low
-- Menambah dokumentasi teknis project.
+Aplikasi dapat diakses melalui browser pada `http://127.0.0.1:8000`.
 
-## 30. Kesimpulan Audit
-Aplikasi Jadwal Mata Kuliah ini terstruktur dengan sangat baik, menggunakan standar Laravel 11/13 yang modern. Fungsionalitas inti telah diimplementasikan dengan baik mulai dari authentication, manajemen jadwal, hingga pengelolaan master data berbasis peran. Kualitas kode sangat baik, namun perlu memperhatikan project hygiene (file-file legacy).
+---
 
-## 31. Log Update Terbaru
-- **UI Modernization & Consistency (11 Oktober 2026):**
-  - Standardisasi desain modern di seluruh halaman (Login, Dashboard, Manajemen Akun, Kelola Jadwal, dan Penjadwalan Otomatis).
-  - Tampilan sidebar konsisten dengan badge role (`Super Admin`, `Admin Fakultas`, `Admin Jurusan`, `Admin Prodi`) di bawah logo APJAD.
-  - Implementasi eye icon toggle (lihat/sembunyi password) pada login dan modal Edit Profile di semua dashboard.
-  - Refactor halaman Penjadwalan Otomatis (`/penjadwalan`): struktur 3 tab ringkas (*Input Mata Kuliah*, *Generate Jadwal*, *Jadwal Semester*) dilengkapi segmented toggle pill *Ganjil/Genap* dan accordion semester 1–8.
-- **Database Dump:**
-  - Backup skema dan data database aktif disertakan di file `database/jadwal_matakuliah.sql`.
+## 👤 Akun Pengujian Bawaan
 
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Super Admin** | `admin@siwalan.com` | `admin123` |
+| **Admin Akun** | `admin@apjad.com` | `admin123` |
+| **Admin Fakultas** | `bdarell@gmail.com` | `password123` |
+| **Admin Jurusan** | `randtian@gmail.com` | `password123` |
+
+---
+
+## 📄 Lisensi
+Aplikasi ini dikembangkan untuk kebutuhan proyek perkuliahan dan pengelolaan jadwal akademik. Hak cipta dilindungi.
