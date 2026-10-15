@@ -87,7 +87,13 @@
                                                 <td><span style="display: inline-block; padding: 2px 8px; background: #e2e8f0; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">{{ $j->sks }}</span></td>
                                                 <td><span style="font-weight: 600; color: #334155;">{{ $j->kode_rombel }}</span></td>
                                                 <td>{{ $j->nama_dosen ?? '-' }}</td>
-                                                <td><span style="display: inline-block; padding: 3px 8px; background: #ecfdf5; color: #047857; font-weight: 600; border-radius: 6px; font-size: 0.85rem;">{{ $j->kode_ruangan }}</span></td>
+                                                <td>
+                                                    @if($j->kode_ruangan)
+                                                        <span style="display: inline-block; padding: 3px 8px; background: #ecfdf5; color: #047857; font-weight: 600; border-radius: 6px; font-size: 0.85rem;">{{ $j->kode_ruangan }}</span>
+                                                    @else
+                                                        <span style="color: #94a3b8; font-style: italic; font-size: 0.85rem;">-</span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; {{ $j->tipe === 'Wajib' ? 'background: #eff6ff; color: #1d4ed8;' : 'background: #fef3c7; color: #b45309;' }}">
                                                         {{ $j->tipe }}

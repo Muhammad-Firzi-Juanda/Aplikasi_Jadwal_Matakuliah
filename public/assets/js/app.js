@@ -200,3 +200,57 @@ function togglePasswordVisibilityModal(fieldId, button) {
     }
 }
 
+
+
+/* ---------------------------------------------------------------
+   Flash Alert — auto-dismiss
+   Semua elemen .flash-alert akan otomatis menghilang setelah
+   beberapa detik dengan animasi smooth dan progress-bar countdown.
+--------------------------------------------------------------- */
+(function () {
+    var DELAY_SUCCESS = 4000;
+    var DELAY_ERROR   = 6000;
+
+    function dismissAlert(el) {
+        el.style.maxHeight = el.offsetHeight + 'px';
+        el.getBoundingClientRect();
+        el.classList.add('flash-alert--hiding');
+        el.addEventListener('transitionend', function handler() {
+            el.removeEventListener('transitionend', handler);
+            if (el.parentNode) { el.parentNode.removeChild(el); }
+        });
+    }
+
+    function initAlert(el) {
+        var isError = el.classList.contains('error');
+        var delay   = isError ? DELAY_ERROR : DELAY_SUCCESS;
+
+        el.style.maxHeight = el.scrollHeight + 'px';
+
+        var bar = document.createElement('div');
+        bar.className = 'flash-alert__progress';
+        bar.style.setProperty('--flash-duration', (delay / 1000) + 's');
+        el.appendChild(bar);
+
+        var timer;
+        var btn = document.createElement('button');
+        btn.className = 'flash-alert__close';
+        btn.setAttribute('aria-label', 'Tutup notifikasi');
+        btn.innerHTML = '&times;';
+        btn.addEventListener('click', function () {
+            clearTimeout(timer);
+            dismissAlert(el);
+        });
+        el.appendChild(btn);
+
+        timer = setTimeout(function () {
+            dismissAlert(el);
+        }, delay);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.flash-alert').forEach(function (el) {
+            initAlert(el);
+        });
+    });
+})();

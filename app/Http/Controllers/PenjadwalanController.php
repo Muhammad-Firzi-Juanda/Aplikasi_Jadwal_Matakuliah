@@ -35,7 +35,7 @@ class PenjadwalanController extends Controller
         $jadwal = DB::table('jadwals')
             ->join('rombels', 'rombels.id', '=', 'jadwals.rombel_id')
             ->join('mata_kuliah_details', 'mata_kuliah_details.id', '=', 'rombels.mata_kuliah_detail_id')
-            ->join('ruangans', 'ruangans.id', '=', 'jadwals.ruangan_id')
+            ->leftJoin('ruangans', 'ruangans.id', '=', 'jadwals.ruangan_id')
             ->leftJoin('dosens', 'dosens.id', '=', 'jadwals.dosen_id')
             ->where('jadwals.is_active', 1)
             ->where('rombels.is_active', 1)
@@ -287,6 +287,7 @@ class PenjadwalanController extends Controller
             'jumlah_kelas' => ['required', 'integer', 'min:1', 'max:10'],
             'kapasitas_per_kelas' => ['required', 'integer', 'min:10', 'max:200'],
             'butuh_lab' => ['nullable', 'boolean'],
+            'tanpa_ruangan' => ['nullable', 'boolean'],
         ], [
             'kode_mk.unique' => 'Kode MK sudah dipakai mata kuliah lain.',
             'kode_mk.required' => 'Kode MK wajib diisi.',
@@ -344,6 +345,7 @@ class PenjadwalanController extends Controller
             'jumlah_kelas' => $validated['jumlah_kelas'],
             'kapasitas_per_kelas' => $validated['kapasitas_per_kelas'],
             'butuh_lab' => $request->boolean('butuh_lab'),
+            'tanpa_ruangan' => $request->boolean('tanpa_ruangan'),
         ];
     }
 

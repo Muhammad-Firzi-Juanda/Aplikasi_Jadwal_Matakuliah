@@ -337,14 +337,12 @@
             @if (session('flash_success'))
                 <div class="flash-alert success">
                     <span>{{ session('flash_success') }}</span>
-                    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;">X</button>
                 </div>
             @endif
 
             @if (session('flash_error'))
                 <div class="flash-alert error">
                     <span>{{ session('flash_error') }}</span>
-                    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;">X</button>
                 </div>
             @endif
 
@@ -842,6 +840,16 @@
                     </div>
                 </div>
 
+                <div class="modal-form-row">
+                    <label for="mkTanpaRuangan">Tanpa Ruangan</label>
+                    <div class="modal-input-container">
+                        <select id="mkTanpaRuangan" name="tanpa_ruangan">
+                            <option value="0">Tidak (butuh ruang kelas)</option>
+                            <option value="1">Ya (Skripsi / KKN / Magang)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="modal-footer-buttons">
                     <button type="button" class="btn-modal-cancel" onclick="closeModal('modalMk')">Batal</button>
                     <button type="submit" class="btn-modal-submit">Simpan</button>
@@ -1120,6 +1128,7 @@ function openEditMk(mk) {
     document.getElementById('mkKelas').value = mk.jumlah_kelas;
     document.getElementById('mkKapasitas').value = mk.kapasitas_per_kelas;
     document.getElementById('mkLab').value = mk.butuh_lab ? '1' : '0';
+    document.getElementById('mkTanpaRuangan').value = mk.tanpa_ruangan ? '1' : '0';
 
     openModal('modalMk');
 }

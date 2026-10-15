@@ -113,25 +113,35 @@ class SchedulerService
         }
 
         while ($terpasang < $total) {
-            $ruangan = $this->cariRuangan($mk, $slot);
-            if (! $ruangan) {
-                break;
+            // MK tanpa ruangan (Skripsi, KKN, dll) tidak perlu alokasi ruangan.
+            if ($mk->tanpa_ruangan) {
+                $ruangan = null;
+            } else {
+                $ruangan = $this->cariRuangan($mk, $slot);
+                if (! $ruangan) {
+                    break;
+                }
             }
 
             $dosen = $this->pilihDosen($dosenList, $slot);
             if ($dosen === false) {
-                break;
+                // Semua dosen bentrok; tetap jadwalkan tanpa dosen.
+                $dosen = null;
             }
 
-            $peran = ($dosen !== null && $dosen === $mk->dosen_ketua_id) ? 'Ketua' : 'Anggota';
+            $peran = ($dosen !== null && $dosen === $mk->dosen_ketua_id)
+                ? 'Ketua'
+                : ($dosen !== null ? 'Anggota' : null);
 
             $this->simpan($mk, $terpasang + 1, $slot, $ruangan, $dosen, $peran);
-            $this->pakaiRuangan[] = [
-                'hari' => $slot['hari'],
-                'ruangan_id' => $ruangan->id,
-                'mulai' => $slot['mulai'],
-                'selesai' => $slot['selesai'],
-            ];
+            if ($ruangan) {
+                $this->pakaiRuangan[] = [
+                    'hari' => $slot['hari'],
+                    'ruangan_id' => $ruangan->id,
+                    'mulai' => $slot['mulai'],
+                    'selesai' => $slot['selesai'],
+                ];
+            }
             if ($dosen) {
                 $this->pakaiDosen[$dosen][] = [
                     'hari' => $slot['hari'],
@@ -215,11 +225,16 @@ class SchedulerService
             $terjadwal = [];
 
             foreach ($grup as $mk) {
-                $ruangan = $this->cariRuangan($mk, $slot);
-                if (! $ruangan) {
-                    $this->peringatan[] = "MK Pilihan {$mk->kode_mk}: tidak ada ruangan kosong di slot pilihan.";
+                // MK tanpa ruangan (Skripsi, KKN, dll) tidak perlu alokasi ruangan.
+                if ($mk->tanpa_ruangan) {
+                    $ruangan = null;
+                } else {
+                    $ruangan = $this->cariRuangan($mk, $slot);
+                    if (! $ruangan) {
+                        $this->peringatan[] = "MK Pilihan {$mk->kode_mk}: tidak ada ruangan kosong di slot pilihan.";
 
-                    continue;
+                        continue;
+                    }
                 }
 
                 $dosen = $mk->dosen_ketua_id ?? $mk->dosen_anggota_id;
@@ -247,12 +262,14 @@ class SchedulerService
 
                 $peran = ($dosen === $mk->dosen_ketua_id) ? 'Ketua' : 'Anggota';
                 $this->simpan($mk, 1, $slotMk, $ruangan, $dosen, $peran);
-                $this->pakaiRuangan[] = [
-                    'hari' => $slotMk['hari'],
-                    'ruangan_id' => $ruangan->id,
-                    'mulai' => $slotMk['mulai'],
-                    'selesai' => $slotMk['selesai'],
-                ];
+                if ($ruangan) {
+                    $this->pakaiRuangan[] = [
+                        'hari' => $slotMk['hari'],
+                        'ruangan_id' => $ruangan->id,
+                        'mulai' => $slotMk['mulai'],
+                        'selesai' => $slotMk['selesai'],
+                    ];
+                }
                 if ($dosen) {
                     $this->pakaiDosen[$dosen][] = [
                         'hari' => $slotMk['hari'],
@@ -270,7 +287,7 @@ class SchedulerService
                     $slotMk['hari'],
                     $this->format($slotMk['mulai']),
                     $this->format($slotMk['selesai']),
-                    $ruangan->kode
+                    $ruangan ? $ruangan->kode : 'Tanpa Ruangan'
                 );
             }
 
@@ -354,9 +371,14 @@ class SchedulerService
                     continue;
                 }
 
-                $bebas = $this->hitungRuanganBebas($mk, $slot);
-                if ($bebas < $mk->jumlah_kelas) {
-                    continue;
+                // MK tanpa ruangan (Skripsi, KKN, dll) tidak butuh cek ketersediaan ruang.
+                if ($mk->tanpa_ruangan) {
+                    $skor = 0;
+                } else {
+                    $skor = $this->hitungRuanganBebas($mk, $slot);
+                    if ($skor < $mk->jumlah_kelas) {
+                        continue;
+                    }
                 }
 
                 // Setiap kelas paralel harus diampu dosen yang berbeda,
@@ -371,8 +393,8 @@ class SchedulerService
                     }
                 }
 
-                if ($bebas > $skorTerbaik) {
-                    $skorTerbaik = $bebas;
+                if ($skor > $skorTerbaik) {
+                    $skorTerbaik = $skor;
                     $terbaik = $slot;
                 }
             }
@@ -539,9 +561,9 @@ class SchedulerService
         MataKuliahDetail $mk,
         int $no,
         array $slot,
-        Ruangan $ruangan,
+        ?Ruangan $ruangan,
         ?int $dosenId,
-        string $peran
+        ?string $peran
     ): void {
         $rombel = Rombel::updateOrCreate(
             [
@@ -551,7 +573,7 @@ class SchedulerService
             [
                 'kode_rombel' => $mk->kode_mk.'-'.$no,
                 'kapasitas' => $mk->kapasitas_per_kelas,
-                'ruangan_id' => $ruangan->id,
+                'ruangan_id' => $ruangan?->id,
                 'hari' => $slot['hari'],
                 'jam_mulai' => $this->format($slot['mulai']),
                 'jam_selesai' => $this->format($slot['selesai']),
@@ -564,7 +586,7 @@ class SchedulerService
         Jadwal::updateOrCreate(
             ['rombel_id' => $rombel->id],
             [
-                'ruangan_id' => $ruangan->id,
+                'ruangan_id' => $ruangan?->id,
                 'dosen_id' => $dosenId,
                 'hari' => $slot['hari'],
                 'jam_mulai' => $this->format($slot['mulai']),

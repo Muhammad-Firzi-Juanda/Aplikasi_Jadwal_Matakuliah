@@ -803,9 +803,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   font-weight: 500;
   font-size: 0.95rem;
   box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease;
 }
 
 .flash-alert.success {
@@ -819,6 +823,50 @@ body {
   border: 1px solid #fecaca;
   color: #991b1b;
 }
+
+/* Auto-dismiss: state hiding */
+.flash-alert--hiding {
+  opacity: 0;
+  transform: translateY(-8px);
+  max-height: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  pointer-events: none;
+}
+
+/* Tombol tutup */
+.flash-alert__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+  font-size: 1.1rem;
+  color: inherit;
+}
+.flash-alert__close:hover { opacity: 1; }
+
+/* Progress bar countdown */
+.flash-alert__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  animation: flashProgress var(--flash-duration, 4s) linear forwards;
+}
+.flash-alert.success .flash-alert__progress { background: #10b981; }
+.flash-alert.error   .flash-alert__progress { background: #ef4444; }
+
+@keyframes flashProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
 
 /* ==========================================================================
    4. MODALS

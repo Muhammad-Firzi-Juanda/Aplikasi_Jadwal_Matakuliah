@@ -16,11 +16,12 @@ class MataKuliahDetail extends Model
     protected $fillable = [
         'kode_mk', 'nama_mk', 'sks', 'semester', 'tipe', 'prodi',
         'dosen_ketua_id', 'dosen_anggota_id', 'jumlah_kelas',
-        'kapasitas_per_kelas', 'butuh_lab', 'catatan', 'is_active',
+        'kapasitas_per_kelas', 'butuh_lab', 'tanpa_ruangan', 'catatan', 'is_active',
     ];
 
     protected $casts = [
         'butuh_lab' => 'boolean',
+        'tanpa_ruangan' => 'boolean',
         'is_active' => 'boolean',
     ];
 
