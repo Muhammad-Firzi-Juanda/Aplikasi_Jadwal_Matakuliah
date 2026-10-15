@@ -31,6 +31,8 @@ Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*M
   - **Bentrok Ruangan:** Ruangan fisik maupun laboratorium tidak dapat digunakan lebih dari satu rombel pada jam yang sama.
   - **Manajemen MK Pilihan:** Pengelompokan slot MK pilihan secara terisolasi (maksimum kuota pilihan terdistribusi adil).
   - **Dukungan Slot Berurutan:** Penjadwalan rapi mulai pukul 07:30, 10:00, 13:00, dan 14:50 dengan penyesuaian durasi per SKS.
+- **Dukungan MK Tanpa Ruangan:** Mata kuliah seperti Skripsi, Kukerta, KKN, dan Magang dapat dijadwalkan tanpa alokasi ruangan kelas — kolom ruangan ditampilkan kosong (`-`) pada tabel jadwal.
+- **Toleransi Dosen Kosong:** MK yang belum memiliki dosen pengampu tetap dapat dijadwalkan; kolom dosen dikosongkan untuk diisi secara manual kemudian.
 
 ### 2. Impor Spreadsheet 100% Otomatis (Excel & CSV)
 - **Deteksi Delimiter Pintar:** Otomatis mendeteksi pemisah CSV (koma `,`, titik koma `;`, atau tab `\t`) tanpa memecah data teks yang memiliki baris kop/judul instansi.
@@ -50,6 +52,7 @@ Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*M
 - **Mode Periode Semester:** Pengalihan instan antara semester **Ganjil** (1, 3, 5, 7) dan **Genap** (2, 4, 6, 8).
 - **Filter Semester & Accordion:** Tampilan jadwal per semester yang dapat dibuka/tutup (*accordion*) serta filter pemilihan semester tertentu.
 - **Rincian Komprehensif:** Menampilkan jam mulai-selesai, kode rombel/kelas, ruangan, dosen pengampu, SKS, dan tipe perkuliahan.
+- **Notifikasi Auto-Dismiss:** Pesan sukses/error menghilang otomatis setelah beberapa detik (4 detik sukses, 6 detik error) dilengkapi progress bar countdown dan tombol tutup manual.
 
 ### 5. Manajemen Akun & Hak Akses Berbasis Role (RBAC)
 - **Super Admin:** Akses penuh konfigurasi sistem, data fakultas, user, mata kuliah, dan penjadwalan.
@@ -67,7 +70,7 @@ Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*M
 | **SQL Injection** | **AMAN** | Seluruh query menggunakan Laravel Eloquent ORM & Query Builder dengan *parameter binding*. |
 | **Cross-Site Scripting (XSS)** | **AMAN** | Output HTML di-*escape* secara otomatis oleh Blade Engine `{{ ... }}`. |
 | **Cross-Site Request Forgery (CSRF)** | **AMAN** | Semua rute `POST`, `PUT`, dan `DELETE` diproteksi token `@csrf` dan middleware VerifyCsrfToken. |
-| **Database Integrity & Cascading** | **AMAN** | Foreign key constraints pada tabel `rombels` dan `jadwals` menggunakan `onDelete('cascade')`. |
+| **Database Integrity & Cascading** | **AMAN** | Foreign key constraints pada tabel `rombels` dan `jadwals` dengan `onDelete('cascade')`/`onDelete('set null')`. Kolom `dosen_id` dan `ruangan_id` di `jadwals` bersifat nullable untuk mendukung MK tanpa dosen/ruangan. |
 | **Autentikasi & Sandi** | **AMAN** | Enkripsi kata sandi menggunakan Bcrypt Hash, pembatasan rate limit login (`throttle:20,1`). |
 | **Format & Gaya Kode** | **LULUS** | Seluruh kode PHP telah diformat dan divalidasi menggunakan **Laravel Pint**. |
 | **Feature & Regression Tests** | **LULUS** | 58 dari 58 skenario pengujian (`MataKuliahImportTest`, `PenjadwalanDestroyAllTest`, `SchedulerServiceTest`, `UserManagementTest`) lulus 100%. |
