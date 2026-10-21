@@ -263,7 +263,7 @@
                         @forelse ($rombels as $i => $r)
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td><strong>{{ $r->kode_rombel }}</strong></td>
+                                <td><strong>{{ $r->kode_rombel }}</strong> @if($r->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $r->kelas }}</span>@endif</td>
                                 <td>{{ $r->mataKuliah->nama_mk ?? '-' }} <span class="badge-kode">{{ $r->mataKuliah->kode_mk ?? '' }}</span></td>
                                 <td style="text-align:center;">{{ $r->mataKuliah->semester ?? '-' }}</td>
                                 <td style="text-align:center;">{{ $r->mataKuliah->sks ?? '-' }}</td>
@@ -338,7 +338,7 @@
                                             <td style="text-align:center;">{{ $j->rombel->mataKuliah->sks ?? '-' }}</td>
                                             <td>{{ $j->dosen->nama ?? '-' }}</td>
                                             <td>{{ $j->ruangan->kode ?? '-' }}</td>
-                                            <td>{{ $j->rombel->kode_rombel ?? '-' }}</td>
+                                            <td>{{ $j->rombel->kode_rombel ?? '-' }} @if($j->rombel->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $j->rombel->kelas }}</span>@endif</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -439,7 +439,7 @@
                         <select id="jadwal_rombel" name="rombel_id" required>
                             <option value="">Pilih Rombel</option>
                             @foreach ($rombelProdi as $r)
-                                <option value="{{ $r->id }}">{{ $r->kode_rombel }} - {{ $r->mataKuliah->nama_mk ?? '' }} ({{ $r->mataKuliah->kode_mk ?? '' }})</option>
+                                <option value="{{ $r->id }}">{{ $r->kode_rombel }} @if($r->kelas) ({{ $r->kelas }})@endif - {{ $r->mataKuliah->nama_mk ?? '' }} ({{ $r->mataKuliah->kode_mk ?? '' }})</option>
                             @endforeach
                         </select>
                     </div>

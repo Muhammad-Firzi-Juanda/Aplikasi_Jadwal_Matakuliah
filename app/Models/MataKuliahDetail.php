@@ -14,16 +14,23 @@ class MataKuliahDetail extends Model
     protected $table = 'mata_kuliah_details';
 
     protected $fillable = [
-        'kode_mk', 'nama_mk', 'sks', 'semester', 'tipe', 'prodi',
+        'master_mk_id', 'kode_mk', 'nama_mk', 'sks', 'semester', 'kelas', 'tipe', 'kategori', 'prodi',
         'dosen_ketua_id', 'dosen_anggota_id', 'jumlah_kelas',
         'kapasitas_per_kelas', 'butuh_lab', 'tanpa_ruangan', 'catatan', 'is_active',
+        'status_verifikasi', 'status_tawar',
     ];
 
     protected $casts = [
         'butuh_lab' => 'boolean',
         'tanpa_ruangan' => 'boolean',
         'is_active' => 'boolean',
+        'status_tawar' => 'boolean',
     ];
+
+    public function masterMk(): BelongsTo
+    {
+        return $this->belongsTo(MataKuliah::class, 'master_mk_id');
+    }
 
     public function dosenKetua(): BelongsTo
     {

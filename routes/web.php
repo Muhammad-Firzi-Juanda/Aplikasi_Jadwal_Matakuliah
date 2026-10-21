@@ -11,6 +11,7 @@ use App\Http\Controllers\PenjadwalanController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\ProdiDashboardController;
 use App\Http\Controllers\ProdiManagementController;
+use App\Http\Controllers\RuanganController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,11 +70,26 @@ Route::middleware('auth')->group(function () {
         Route::delete('/mata-kuliah/{mataKuliah}', [MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
     });
 
-    // Super Admin & Fakultas routes for Scheduling & Prodi management
+    // Ruangan Management for Super Admin, Fakultas, & Prodi
+    Route::middleware('check_role:Super Admin,Fakultas,Prodi')->group(function () {
+        Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan.index');
+        Route::get('/ruangan/create', [RuanganController::class, 'create'])->name('ruangan.create');
+        Route::post('/ruangan', [RuanganController::class, 'store'])->name('ruangan.store');
+        Route::get('/ruangan/{ruangan}/edit', [RuanganController::class, 'edit'])->name('ruangan.edit');
+        Route::put('/ruangan/{ruangan}', [RuanganController::class, 'update'])->name('ruangan.update');
+        Route::delete('/ruangan/{ruangan}', [RuanganController::class, 'destroy'])->name('ruangan.destroy');
+        Route::post('/ruangan/{ruangan}/toggle-status', [RuanganController::class, 'toggleStatus'])->name('ruangan.toggle-status');
+    });
+
+    // Prodi management routes for Super Admin & Fakultas
     Route::middleware('check_role:Super Admin,Fakultas')->group(function () {
         Route::post('/prodi', [ProdiController::class, 'store'])->name('prodi.store');
         Route::put('/prodi/{prodi}', [ProdiController::class, 'update'])->name('prodi.update');
         Route::delete('/prodi/{prodi}', [ProdiController::class, 'destroy'])->name('prodi.destroy');
+    });
+
+    // Scheduling & Timetable routes for Super Admin, Fakultas, Jurusan, and Prodi
+    Route::middleware('check_role:Super Admin,Fakultas,Jurusan,Prodi')->group(function () {
         Route::get('/jadwal-kuliah', [JadwalKuliahController::class, 'index'])->name('jadwal-kuliah.index');
 
         Route::get('/penjadwalan', [PenjadwalanController::class, 'index'])->name('penjadwalan.index');
@@ -85,6 +101,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/penjadwalan/import-preview', [PenjadwalanController::class, 'previewImport'])->name('penjadwalan.import.preview');
         Route::post('/penjadwalan/import', [PenjadwalanController::class, 'import'])->name('penjadwalan.import');
         Route::delete('/penjadwalan/hapus-semua', [PenjadwalanController::class, 'destroyAll'])->name('penjadwalan.destroy-all');
+
+        // API Routes for Ruangan (AJAX)
+        Route::get('/api/ruangan/{ruangan}', [RuanganController::class, 'show'])->name('api.ruangan.show');
+        Route::post('/api/ruangan', [RuanganController::class, 'store'])->name('api.ruangan.store');
+        Route::put('/api/ruangan/{ruangan}', [RuanganController::class, 'update'])->name('api.ruangan.update');
+        Route::delete('/api/ruangan/{ruangan}', [RuanganController::class, 'destroy'])->name('api.ruangan.destroy');
+        Route::post('/api/ruangan/{ruangan}/toggle-status', [RuanganController::class, 'toggleStatus'])->name('api.ruangan.toggle-status');
     });
 
     // Admin Fakultas routes

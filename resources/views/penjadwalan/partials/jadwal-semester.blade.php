@@ -60,7 +60,7 @@
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <div style="width: 8px; height: 8px; background: #0860be; border-radius: 50%;"></div>
                                 <h4 style="margin: 0; font-size: 1rem; color: #1e3a5f; font-weight: 700;">{{ $hari }}</h4>
-                                <span style="font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 12px;">{{ $perHari[$hari]->count() }} kelas</span>
+                                <span class="hari-count-badge" style="font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 12px;">{{ $perHari[$hari]->count() }} kelas</span>
                             </div>
                             <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0;">
                                 <table class="data-table" style="min-width: 760px; margin: 0;">
@@ -73,12 +73,13 @@
                                             <th style="width: 80px;">Kelas</th>
                                             <th>Dosen Pengampu</th>
                                             <th style="width: 100px;">Ruangan</th>
+                                            <th style="width: 110px;">Prodi</th>
                                             <th style="width: 80px;">Tipe</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($perHari[$hari] as $j)
-                                            <tr>
+                                            <tr class="jadwal-row-item" data-prodi="{{ $j->prodi }}">
                                                 <td style="white-space: nowrap; font-weight: 600; color: #0860be;">
                                                     {{ substr($j->jam_mulai, 0, 5) }} - {{ substr($j->jam_selesai, 0, 5) }}
                                                 </td>
@@ -93,6 +94,11 @@
                                                     @else
                                                         <span style="color: #94a3b8; font-style: italic; font-size: 0.85rem;">-</span>
                                                     @endif
+                                                </td>
+                                                <td>
+                                                    <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; {{ str_contains(strtolower($j->prodi ?? ''), 'informatika') ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' : 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;' }}">
+                                                        {{ $j->prodi ?? '-' }}
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; {{ $j->tipe === 'Wajib' ? 'background: #eff6ff; color: #1d4ed8;' : 'background: #fef3c7; color: #b45309;' }}">

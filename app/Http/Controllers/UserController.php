@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
-use App\Models\DosenMengajar;
+use App\Models\Dosen;
 use App\Models\Fakultas;
-use App\Models\KelasJadwal;
-use App\Models\MataKuliah;
+use App\Models\Jadwal;
+use App\Models\MataKuliahDetail;
 use App\Models\Prodi;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -29,9 +29,9 @@ class UserController extends Controller
             'total_users' => User::count(),
             'total_fakultas' => Fakultas::count(),
             'total_prodi' => Prodi::count(),
-            'total_mata_kuliah' => MataKuliah::count(),
-            'total_kelas' => KelasJadwal::count(),
-            'total_dosen' => DosenMengajar::count(),
+            'total_mata_kuliah' => MataKuliahDetail::where('is_active', 1)->count(),
+            'total_jadwal' => Jadwal::where('is_active', 1)->count(),
+            'total_dosen' => Dosen::where('is_active', 1)->count(),
         ];
 
         return view('dashboard', compact('users', 'stats'));

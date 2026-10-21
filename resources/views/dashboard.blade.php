@@ -153,8 +153,8 @@
                         </svg>
                     </div>
                     <div class="stat-content">
-                        <p class="stat-label">Kelas Jadwal</p>
-                        <p class="stat-value">{{ $stats['total_kelas'] }}</p>
+                        <p class="stat-label">Total Jadwal</p>
+                        <p class="stat-value">{{ $stats['total_jadwal'] }}</p>
                     </div>
                 </div>
 
@@ -166,7 +166,7 @@
                         </svg>
                     </div>
                     <div class="stat-content">
-                        <p class="stat-label">Dosen Mengajar</p>
+                        <p class="stat-label">Total Dosen</p>
                         <p class="stat-value">{{ $stats['total_dosen'] }}</p>
                     </div>
                 </div>

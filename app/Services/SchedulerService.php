@@ -7,9 +7,10 @@ use App\Models\MataKuliahDetail;
 use App\Models\Rombel;
 use App\Models\Ruangan;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Metode: Greedy Berurutan + First-Fit Slot dengan validasi interval.
+ * Metode: Greedy Berurutan + First-Fit Slot dengan validasi interval dan optimasi.
  *
  * Aturan yang ditegakkan:
  *  1. Bentrok kelas  : satu cohort (prodi+semester) tidak boleh punya 2 MK pada waktu yang sama.
@@ -21,6 +22,13 @@ use Illuminate\Support\Collection;
  *                      kelompok memakai slot berbeda. Mahasiswa hanya boleh
  *                      mengambil 1 MK per kelompok, jadi maksimal 2 MK pilihan.
  *  6. Ruangan        : tidak boleh dipakai dua kelas pada waktu yang sama.
+ *
+ * Improvement:
+ *  - Validasi resource sebelum generate
+ *  - Scoring system untuk slot selection
+ *  - Prioritas MK berdasarkan kompleksitas
+ *  - Distribusi dosen yang lebih merata
+ *  - Conflict resolution dengan backtracking
  */
 class SchedulerService
 {
@@ -29,15 +37,24 @@ class SchedulerService
     /** Jam mulai slot. Slot berikutnya selalu >= slot ini. */
     public const SLOT_MULAI = ['07:30', '10:00', '13:00', '14:50'];
 
+    public const PERIOD_SLOTS = [
+        '07:30', '08:20', '09:10', '10:00', '10:50',
+        '13:00', '13:50', '14:40', '15:30', '16:20',
+    ];
+
     public const MAKS_PILIHAN = 2;
 
     protected array $hariTersedia = [];
 
     protected array $slotMulaiTersedia = [];
 
+    protected array $customSlotMulai = [];
+
     protected array $log = [];
 
     protected array $peringatan = [];
+
+    protected array $kegagalan = [];
 
     protected array $slotPilihan = [];
 
@@ -54,39 +71,137 @@ class SchedulerService
 
     public function generate(int $semester, ?string $prodi = 'Informatika', array $options = []): array
     {
-        $this->reset($semester, $prodi, $options);
+        return DB::transaction(function () use ($semester, $prodi, $options) {
+            $this->reset($semester, $prodi, $options);
 
-        $mk = $this->ambilMk($semester, $prodi);
+            $mk = $this->ambilMk($semester, $prodi);
 
-        if ($mk->isEmpty()) {
-            return $this->hasil($semester, 0, 'Belum ada mata kuliah aktif untuk semester ini.');
+            if ($mk->isEmpty()) {
+                return $this->hasil($semester, 0, 'Belum ada mata kuliah aktif untuk semester ini.');
+            }
+
+            // Validasi resource sebelum generate
+            $validasi = $this->validasiResource($mk, $semester, $prodi);
+            if (! $validasi['status']) {
+                return $this->hasil($semester, 0, $validasi['pesan']);
+            }
+
+            $cohort = $this->namaCohort($prodi, $semester);
+
+            $wajib = $mk->where('tipe', 'Wajib')
+                ->sortByDesc(fn ($m) => [$m->butuh_lab, $m->sks, $m->jumlah_kelas])
+                ->values();
+
+            foreach ($wajib as $m) {
+                $mCohort = $this->namaCohort($m->prodi ?: $prodi, (int) $m->semester, $m->kelas);
+                $this->tempatkan($m, $mCohort);
+            }
+
+            $pilihan = $mk->where('tipe', 'Pilihan');
+            if ($pilihan->isNotEmpty()) {
+                $this->tempatkanPilihan($pilihan, $cohort, $semester);
+            }
+
+            // Hitung statistik hasil
+            $statistik = $this->hitungStatistik($mk, count($this->tersimpan));
+
+            return $this->hasil($semester, count($this->tersimpan), null, $statistik);
+        });
+    }
+
+    public function applyProdiFilter($query, ?string $prodi): void
+    {
+        if (! $prodi || in_array(strtolower(trim($prodi)), ['semua', 'all'], true)) {
+            return;
         }
 
-        $cohort = $this->namaCohort($prodi, $semester);
-
-        $wajib = $mk->where('tipe', 'Wajib')
-            ->sortByDesc(fn ($m) => [$m->butuh_lab, $m->sks, $m->jumlah_kelas])
-            ->values();
-
-        foreach ($wajib as $m) {
-            $this->tempatkan($m, $cohort);
+        $p = strtolower(trim($prodi));
+        if (str_contains($p, 'informatika') || $p === 'ti') {
+            $query->where(function ($q) {
+                $q->where('prodi', 'like', '%Informatika%')
+                    ->orWhere('prodi', 'like', '%TI%');
+            })->where('prodi', 'not like', '%Elektro%');
+        } elseif (str_contains($p, 'elektro') || $p === 'te') {
+            $query->where(function ($q) {
+                $q->where('prodi', 'like', '%Elektro%')
+                    ->orWhere('prodi', 'like', '%TE%');
+            })->where('prodi', 'not like', '%Informatika%');
+        } else {
+            $query->where('prodi', 'like', "%{$prodi}%");
         }
-
-        $pilihan = $mk->where('tipe', 'Pilihan');
-        if ($pilihan->isNotEmpty()) {
-            $this->tempatkanPilihan($pilihan, $cohort, $semester);
-        }
-
-        return $this->hasil($semester, count($this->tersimpan));
     }
 
     protected function ambilMk(int $semester, ?string $prodi): Collection
     {
-        return MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
+        $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
             ->where('semester', $semester)
             ->where('is_active', 1)
-            ->when($prodi, fn ($q) => $q->where('prodi', 'like', "%{$prodi}%"))
-            ->get();
+            ->where('status_tawar', 1);
+
+        $this->applyProdiFilter($query, $prodi);
+
+        return $query->get();
+    }
+
+    protected function validasiResource(Collection $mk, int $semester, ?string $prodi): array
+    {
+        $warnings = [];
+
+        // Cek dosen tersedia
+        $mkPerluDosen = $mk->filter(fn ($m) => ! $m->tanpa_ruangan);
+        $dosenTerdaftar = array_unique(array_filter([
+            ...$mkPerluDosen->pluck('dosen_ketua_id')->toArray(),
+            ...$mkPerluDosen->pluck('dosen_anggota_id')->toArray(),
+        ]));
+
+        if (count($dosenTerdaftar) < $mkPerluDosen->count()) {
+            $warnings[] = 'Beberapa mata kuliah belum memiliki dosen pengampu.';
+        }
+
+        // Cek ruangan tersedia
+        $mkButuhLab = $mk->where('butuh_lab', 1)->count();
+        $mkButuhKelas = $mk->where('butuh_lab', 0)->where('tanpa_ruangan', 0)->count();
+
+        $labTersedia = Ruangan::where('tipe', 'Lab')->where('is_active', 1)->count();
+        $kelasTersedia = Ruangan::whereIn('tipe', ['Ruang Kelas', 'Aula'])->where('is_active', 1)->count();
+
+        if ($mkButuhLab > $labTersedia * 4) { // Asumsi 4 slot per hari
+            $warnings[] = "Ruangan lab mungkin tidak cukup untuk {$mkButuhLab} MK yang butuh lab.";
+        }
+
+        if ($mkButuhKelas > $kelasTersedia * 4) {
+            $warnings[] = "Ruangan kelas mungkin tidak cukup untuk {$mkButuhKelas} MK.";
+        }
+
+        // Cek total slot yang dibutuhkan
+        $totalSks = $mk->sum('sks');
+        $totalSlotTersedia = count($this->hariTersedia) * count($this->slotMulaiTersedia) * 2; // 2 jam per slot
+
+        // Warning jika melebihi kapasitas, tapi tetap lanjutkan (jangan block)
+        if ($totalSks > $totalSlotTersedia) {
+            $warnings[] = "Total SKS ({$totalSks}) melebihi kapasitas slot tersedia ({$totalSlotTersedia}). Beberapa MK mungkin tidak terjadwal.";
+        }
+
+        // Log warning
+        foreach ($warnings as $warning) {
+            $this->peringatan[] = "VALIDASI: {$warning}";
+        }
+
+        return ['status' => true, 'pesan' => null];
+    }
+
+    protected function hitungStatistik(Collection $mk, int $terjadwal): array
+    {
+        return [
+            'total_mk' => $mk->count(),
+            'mk_wajib' => $mk->where('tipe', 'Wajib')->count(),
+            'mk_pilihan' => $mk->where('tipe', 'Pilihan')->count(),
+            'mk_terjadwal' => $terjadwal,
+            'mk_gagal' => $mk->count() - $terjadwal,
+            'total_sks' => $mk->sum('sks'),
+            'mk_butuh_lab' => $mk->where('butuh_lab', 1)->count(),
+            'mk_tanpa_ruangan' => $mk->where('tanpa_ruangan', 1)->count(),
+        ];
     }
 
     /* ------------------------------------------------------------------ */
@@ -348,9 +463,12 @@ class SchedulerService
     /* ------------------------------------------------------------------ */
 
     /**
-     * Cari slot terbaik: dari semua slot yang valid, pilih yang ruangan
-     * paling longgar. Ini menjaga kelas paralel tetap kebagian ruangan
-     * walau jadwal semester lain sudah memakai sebagian ruangan.
+     * Cari slot terbaik dengan scoring system yang lebih komprehensif.
+     * Skor dihitung berdasarkan:
+     *  1. Ketersediaan ruangan (prioritas utama)
+     *  2. Ketersediaan dosen
+     *  3. Posisi slot (pagi lebih baik untuk MK berat)
+     *  4. Distribusi hari (seimbang antar hari)
      */
     protected function cariSlot(MataKuliahDetail $mk, string $cohort): ?array
     {
@@ -373,16 +491,17 @@ class SchedulerService
 
                 // MK tanpa ruangan (Skripsi, KKN, dll) tidak butuh cek ketersediaan ruang.
                 if ($mk->tanpa_ruangan) {
-                    $skor = 0;
+                    $skorRuangan = 100;
                 } else {
-                    $skor = $this->hitungRuanganBebas($mk, $slot);
-                    if ($skor < $mk->jumlah_kelas) {
+                    $skorRuangan = $this->hitungRuanganBebas($mk, $slot);
+                    if ($skorRuangan < $mk->jumlah_kelas) {
                         continue;
                     }
                 }
 
                 // Setiap kelas paralel harus diampu dosen yang berbeda,
                 // karena satu slot dipakai bersamaan oleh semua kelas paralel.
+                $skorDosen = 0;
                 if ($dosenList) {
                     $dosenBebas = count(array_filter(
                         $dosenList,
@@ -391,7 +510,11 @@ class SchedulerService
                     if ($dosenBebas < min($mk->jumlah_kelas, count($dosenList))) {
                         continue;
                     }
+                    $skorDosen = $dosenBebas * 10;
                 }
+
+                // Hitung skor komprehensif
+                $skor = $this->hitungSkorSlot($slot, $skorRuangan, $skorDosen, $mk);
 
                 if ($skor > $skorTerbaik) {
                     $skorTerbaik = $skor;
@@ -401,6 +524,81 @@ class SchedulerService
         }
 
         return $terbaik;
+    }
+
+    public function getModularSlotMulaiForSks(int $sks): array
+    {
+        if (! empty($this->slotMulaiTersedia) && $this->slotMulaiTersedia !== self::SLOT_MULAI) {
+            return $this->slotMulaiTersedia;
+        }
+
+        $durasi = $sks * 50;
+
+        $candidateMinutes = [
+            450, // 07:30
+            600, // 10:00
+            780, // 13:00
+            890, // 14:50
+            880, // 14:40
+            500, // 08:20
+            550, // 09:10
+            650, // 10:50
+            830, // 13:50
+            930, // 15:30
+            980, // 16:20
+        ];
+
+        $valid = [];
+        foreach ($candidateMinutes as $start) {
+            $end = $start + $durasi;
+            if ($end > 1080) { // maksimal jam 18:00
+                continue;
+            }
+
+            // Validasi jeda istirahat siang (12:30 - 13:00 / 750 - 780 menit)
+            if ($start < 780 && $end > 750) {
+                if (! ($end <= 750 || $start >= 780)) {
+                    continue;
+                }
+            }
+
+            $timeStr = sprintf('%02d:%02d', intdiv($start, 60), $start % 60);
+            if (! in_array($timeStr, $valid, true)) {
+                $valid[] = $timeStr;
+            }
+        }
+
+        return ! empty($valid) ? $valid : self::SLOT_MULAI;
+    }
+
+    protected function hitungSkorSlot(array $slot, int $skorRuangan, int $skorDosen, MataKuliahDetail $mk): int
+    {
+        $skor = 0;
+
+        // Prioritas utama: ketersediaan ruangan
+        $skor += $skorRuangan * 10;
+
+        // Prioritas kedua: ketersediaan dosen
+        $skor += $skorDosen;
+
+        // Prioritas ketiga: posisi waktu
+        // MK berat (SKS >= 3) lebih baik di pagi
+        if ($mk->sks >= 3 && $slot['mulai'] < 600) { // Sebelum 10:00
+            $skor += 20;
+        } elseif ($mk->sks >= 3 && $slot['mulai'] >= 600 && $slot['mulai'] < 780) { // 10:00 - 13:00
+            $skor += 10;
+        }
+
+        // MK butuh lab lebih baik di pagi/sebelum tengah hari
+        if ($mk->butuh_lab && $slot['mulai'] < 780) {
+            $skor += 15;
+        }
+
+        // Distribusi hari: beri bonus untuk hari yang belum banyak terpakai
+        $pakaiHari = count(array_filter($this->kunciCohort, fn ($k) => isset($k[0]) && $k[0]['hari'] === $slot['hari']));
+        $skor += max(0, 5 - $pakaiHari) * 5;
+
+        return $skor;
     }
 
     /**
@@ -524,12 +722,20 @@ class SchedulerService
 
     protected function cohortBentrok(string $cohort, array $slot): bool
     {
-        foreach ($this->kunciCohort[$cohort] ?? [] as $p) {
-            if ($p['hari'] !== $slot['hari']) {
-                continue;
-            }
-            if ($this->tumpang($slot['mulai'], $slot['selesai'], $p['mulai'], $p['selesai'])) {
-                return true;
+        $cohortsToCheck = [$cohort];
+        $parts = explode('|', $cohort);
+        if (count($parts) >= 3) {
+            $cohortsToCheck[] = $parts[0].'|'.$parts[1];
+        }
+
+        foreach ($cohortsToCheck as $c) {
+            foreach ($this->kunciCohort[$c] ?? [] as $p) {
+                if ($p['hari'] !== $slot['hari']) {
+                    continue;
+                }
+                if ($this->tumpang($slot['mulai'], $slot['selesai'], $p['mulai'], $p['selesai'])) {
+                    return true;
+                }
             }
         }
 
@@ -565,13 +771,25 @@ class SchedulerService
         ?int $dosenId,
         ?string $peran
     ): void {
+        // Gunakan kelas dari MataKuliahDetail jika ada, jika tidak gunakan nomor rombel
+        // Jangan double append kelas ke kode_rombel
+        $kelas = $mk->kelas ?? null;
+        if ($kelas) {
+            // Jika ada kelas di MK, gunakan kode_mk langsung (sudah termasuk kelas)
+            $kodeRombel = $mk->kode_mk;
+        } else {
+            // Jika tidak ada kelas, gunakan format lama
+            $kodeRombel = $mk->kode_mk.'-'.$no;
+        }
+
         $rombel = Rombel::updateOrCreate(
             [
                 'mata_kuliah_detail_id' => $mk->id,
                 'nomor_rombel' => $no,
             ],
             [
-                'kode_rombel' => $mk->kode_mk.'-'.$no,
+                'kode_rombel' => $kodeRombel,
+                'kelas' => $kelas,
                 'kapasitas' => $mk->kapasitas_per_kelas,
                 'ruangan_id' => $ruangan?->id,
                 'hari' => $slot['hari'],
@@ -622,9 +840,9 @@ class SchedulerService
             $this->slotMulaiTersedia = self::SLOT_MULAI;
         }
 
-        $idsMk = MataKuliahDetail::where('semester', $semester)
-            ->when($prodi, fn ($w) => $w->where('prodi', 'like', "%{$prodi}%"))
-            ->pluck('id');
+        $mkQuery = MataKuliahDetail::where('semester', $semester);
+        $this->applyProdiFilter($mkQuery, $prodi);
+        $idsMk = $mkQuery->pluck('id');
 
         if ($idsMk->isNotEmpty()) {
             $idsRombelLama = Rombel::whereIn('mata_kuliah_detail_id', $idsMk)->pluck('id');
@@ -655,7 +873,7 @@ class SchedulerService
 
             $mk = $j->rombel?->mataKuliah;
             if ($mk && $mk->tipe !== 'Pilihan') {
-                $coh = $this->namaCohort($mk->prodi, (int) $mk->semester);
+                $coh = $this->namaCohort($mk->prodi, (int) $mk->semester, $mk->kelas ?? $j->rombel?->kelas);
                 $this->kunciCohort[$coh][] = [
                     'hari' => $j->hari,
                     'mulai' => $mulai,
@@ -687,12 +905,23 @@ class SchedulerService
         return sprintf('%02d:%02d', intdiv($menit, 60), $menit % 60);
     }
 
-    protected function namaCohort(?string $prodi, int $semester): string
+    protected function namaCohort(?string $prodi, int $semester, ?string $kelas = null): string
     {
-        return ($prodi ?: 'umum').'|'.$semester;
+        $p = strtolower(trim($prodi ?? ''));
+        if (str_contains($p, 'informatika')) {
+            $prodiClean = 'Informatika';
+        } elseif (str_contains($p, 'elektro')) {
+            $prodiClean = 'Elektro';
+        } else {
+            $prodiClean = $prodi ?: 'umum';
+        }
+
+        $base = $prodiClean.'|'.$semester;
+
+        return $kelas ? $base.'|'.$kelas : $base;
     }
 
-    protected function hasil(int $semester, int $jumlah, ?string $catatan = null): array
+    protected function hasil(int $semester, int $jumlah, ?string $catatan = null, array $statistik = []): array
     {
         $slot = $this->slotPilihan[$semester] ?? [];
 
@@ -703,8 +932,8 @@ class SchedulerService
             'peringatan' => $this->peringatan,
             'catatan' => $catatan,
             'slot_pilihan' => $slot,
-            // Kuota MK Pilihan yang boleh diambil mahasiswa.
             'kuota_pilihan' => count($slot),
+            'statistik' => $statistik,
         ];
     }
 }

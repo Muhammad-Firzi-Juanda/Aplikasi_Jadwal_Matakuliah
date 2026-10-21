@@ -346,6 +346,12 @@
                 </div>
             @endif
 
+            @if (session('flash_warning'))
+                <div class="flash-alert warning" style="background:#fffbeb; color:#b45309; border:1px solid #fcd34d;">
+                    <span>{{ session('flash_warning') }}</span>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="flash-alert error">
                     <span>
@@ -363,6 +369,7 @@
             <div class="tabs-container">
                 <div class="tabs-header">
                     <button type="button" class="tab-btn active" data-tab="tab-input" onclick="showTab('tab-input', this)">Input Mata Kuliah</button>
+                    <button type="button" class="tab-btn" data-tab="tab-ruangan" onclick="showTab('tab-ruangan', this)">Manajemen Ruangan</button>
                     <button type="button" class="tab-btn" data-tab="tab-generate" onclick="showTab('tab-generate', this)">Generate Jadwal</button>
                     <button type="button" class="tab-btn" data-tab="tab-jadwal" onclick="showTab('tab-jadwal', this)">Jadwal Semester</button>
                 </div>
@@ -370,33 +377,48 @@
                 {{-- ============ INPUT MATA KULIAH ============ --}}
                 <div class="tab-content active" id="tab-input">
                     <div class="tab-header">
-                        <h2>Data Mata Kuliah</h2>
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h2>Data Mata Kuliah</h2>
+                            @if (($userRole ?? '') === 'Jurusan')
+                                <span style="background:#e0f2fe; color:#0369a1; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                    Mode Monitoring Jurusan
+                                </span>
+                            @elseif (($userRole ?? '') === 'Prodi')
+                                <span style="background:#f0fdf4; color:#15803d; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    Prodi: {{ $userProdi ?? 'Teknik Informatika' }}
+                                </span>
+                            @endif
+                        </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button type="button" class="btn-add" onclick="openModal('modalImportMk')" style="background:#16a34a;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                                Import Excel / Spreadsheet
-                            </button>
-                            <button type="button" class="btn-add" onclick="openTambahMk()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Tambah MK
-                            </button>
-                            @if ($mataKuliah->isNotEmpty())
-                                <button type="button" class="btn-add" onclick="openModalHapusSemua('all')" style="background:#dc2626;" title="Hapus semua data mata kuliah dan jadwal">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                            @if (($userRole ?? '') !== 'Jurusan')
+                                <button type="button" class="btn-add" onclick="openModal('modalImportMk')" style="background:#16a34a;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
                                     </svg>
-                                    Hapus Semua Data
+                                    Import Excel / Spreadsheet
                                 </button>
+                                <button type="button" class="btn-add" onclick="openTambahMk()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Tambah MK
+                                </button>
+                                @if ($mataKuliah->isNotEmpty())
+                                    <button type="button" class="btn-add" onclick="openModalHapusSemua('all')" style="background:#dc2626;" title="Hapus semua data mata kuliah dan jadwal">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                        Hapus Semua Data
+                                    </button>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -441,32 +463,175 @@
                                         <td>{{ $mk->dosenAnggota->nama ?? '-' }}</td>
                                         <td>{{ $mk->jumlah_kelas }}</td>
                                         <td style="text-align:center;">
-                                            <div class="action-buttons-group" style="justify-content:center;">
-                                                <button type="button" class="btn-action" title="Edit"
-                                                    onclick='openEditMk(@json($mk))'>
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"></path>
-                                                    </svg>
-                                                </button>
-                                                <form action="{{ route('penjadwalan.destroy', $mk->id) }}" method="POST" style="display:inline;"
-                                                    onsubmit="return konfirmasiHapus(event, '{{ $mk->kode_mk }}')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn-action delete-btn" title="Hapus">
+                                            @if (($userRole ?? '') === 'Jurusan')
+                                                <span style="font-size:12px; color:#64748b; font-style:italic;">Hanya Lihat</span>
+                                            @elseif (($userRole ?? '') === 'Prodi' && ! empty($userProdi) && stripos($mk->prodi, $userProdi) === false)
+                                                <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px;" title="Mata Kuliah Fakultas/Universitas">MK Bersama</span>
+                                            @else
+                                                <div class="action-buttons-group" style="justify-content:center;">
+                                                    <button type="button" class="btn-action" title="Edit"
+                                                        onclick='openEditMk(@json($mk))'>
                                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                            <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"></path>
                                                         </svg>
                                                     </button>
-                                                </form>
-                                            </div>
+                                                    <form action="{{ route('penjadwalan.destroy', $mk->id) }}" method="POST" style="display:inline;"
+                                                        onsubmit="return konfirmasiHapus(event, '{{ $mk->kode_mk }}')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-action delete-btn" title="Hapus">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
                             @empty
                                 <tr>
                                     <td colspan="9" style="text-align:center; padding:24px;">Belum ada mata kuliah.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- ============ MANAJEMEN RUANGAN ============ --}}
+                <div class="tab-content" id="tab-ruangan">
+                    <div class="tab-header">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h2>Manajemen Ruangan Kuliah & Lab</h2>
+                            <span style="background:#eff6ff; color:#1d4ed8; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-8h8v8"/></svg>
+                                Total: {{ $ruangans->count() }} Ruangan ({{ $ruanganAktif->count() }} Aktif)
+                            </span>
+                            @if (($userRole ?? '') === 'Jurusan')
+                                <span style="background:#e0f2fe; color:#0369a1; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                    Mode Monitoring Jurusan
+                                </span>
+                            @endif
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            @if (($userRole ?? '') !== 'Jurusan')
+                                <button type="button" class="btn-add" onclick="openTambahRuangan()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Tambah Ruangan
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Kode Ruangan</th>
+                                <th>Nama Ruangan</th>
+                                <th>Tipe</th>
+                                <th>Kapasitas</th>
+                                <th>Gedung & Lantai</th>
+                                <th style="text-align:center;">Status</th>
+                                <th style="text-align:center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($ruangans as $r)
+                                <tr>
+                                    <td>
+                                        <strong>{{ $r->kode }}</strong>
+                                        @if ($r->isDefault())
+                                            <span style="display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 7px; background: #e0f2fe; color: #0369a1; border-radius: 4px; margin-left: 6px;" title="Ruangan bawaan resmi kampus">Kampus</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $r->nama }}</td>
+                                    <td>
+                                        @if ($r->tipe === 'Lab')
+                                            <span style="display: inline-block; padding: 3px 10px; background: #dcfce7; color: #15803d; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Lab</span>
+                                        @elseif ($r->tipe === 'Ruang Kelas')
+                                            <span style="display: inline-block; padding: 3px 10px; background: #eff6ff; color: #1d4ed8; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Ruang Kelas</span>
+                                        @else
+                                            <span style="display: inline-block; padding: 3px 10px; background: #fef3c7; color: #92400e; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">{{ $r->tipe }}</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $r->kapasitas }} Kursi</td>
+                                    <td>{{ $r->gedung ?? '-' }} / Lt. {{ $r->lantai ?? '-' }}</td>
+                                    <td style="text-align:center;">
+                                        @if (($userRole ?? '') === 'Jurusan')
+                                            @if ($r->is_active)
+                                                <span style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                                                    <span style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+                                                    Aktif
+                                                </span>
+                                            @else
+                                                <span style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                                                    <span style="width:7px; height:7px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+                                                    Nonaktif
+                                                </span>
+                                            @endif
+                                        @else
+                                            <form action="{{ route('ruangan.toggle-status', $r->id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                @if ($r->is_active)
+                                                    <button type="submit" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk menonaktifkan ruangan">
+                                                        <span style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+                                                        Aktif
+                                                    </button>
+                                                @else
+                                                    <button type="submit" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk mengaktifkan ruangan">
+                                                        <span style="width:7px; height:7px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+                                                        Nonaktif
+                                                    </button>
+                                                @endif
+                                            </form>
+                                        @endif
+                                    </td>
+                                    <td style="text-align:center;">
+                                        @if (($userRole ?? '') === 'Jurusan')
+                                            <span style="font-size:12px; color:#64748b; font-style:italic;">Hanya Lihat</span>
+                                        @else
+                                            <div class="action-buttons-group" style="justify-content:center;">
+                                                <button type="button" class="btn-action edit-btn" title="Edit Ruangan"
+                                                    onclick='openEditRuangan(@json($r))'>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"></path>
+                                                    </svg>
+                                                </button>
+                                                @if ($r->isDefault())
+                                                    <button type="button" class="btn-action" disabled title="Ruangan bawaan resmi kampus tidak dapat dihapus (dapat dinonaktifkan jika tidak digunakan)" style="opacity:0.4; cursor:not-allowed;">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                        </svg>
+                                                    </button>
+                                                @else
+                                                    <form action="{{ route('ruangan.destroy', $r->id) }}" method="POST" style="display:inline;"
+                                                        onsubmit="return konfirmasiHapusRuangan(event, '{{ $r->kode }}')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-action delete-btn" title="Hapus Ruangan">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" style="text-align:center; padding:24px;">Belum ada data ruangan.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -513,9 +678,19 @@
                         </div>
 
                         <div class="generate-form-row">
-                            <label class="generate-form-label label-input" for="genProdi">Prodi</label>
+                            <label class="generate-form-label label-input" for="genProdi">Program Studi</label>
                             <div class="generate-input-wrap">
-                                <input type="text" id="genProdi" name="prodi" value="Informatika" required>
+                                @if (($userRole ?? '') === 'Prodi')
+                                    <input type="text" id="genProdi" name="prodi" value="{{ $userProdi ?? 'Teknik Informatika' }}" readonly style="background:#f1f5f9; cursor:not-allowed; font-weight:600; padding:9px 14px; border:1.5px solid #cbd5e1; border-radius:8px; width:100%;" required>
+                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Terkunci khusus Program Studi Anda ({{ $userProdi ?? 'Teknik Informatika' }}).</span>
+                                @else
+                                    <select id="genProdi" name="prodi" style="padding:9px 14px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.95rem; background:#ffffff; color:#1e293b; width:100%; cursor:pointer; font-weight:500;" required>
+                                        <option value="Teknik Informatika" selected>Teknik Informatika (TI) &mdash; Hanya mata kuliah TI</option>
+                                        <option value="Teknik Elektro">Teknik Elektro (TE) &mdash; Hanya mata kuliah Elektro</option>
+                                        <option value="Semua">Semua Program Studi (Lintas Prodi)</option>
+                                    </select>
+                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Pilih prodi spesifik agar mata kuliah prodi lain tidak ikut di-generate.</span>
+                                @endif
                             </div>
                         </div>
 
@@ -544,7 +719,14 @@
                         </div>
 
                         <div class="generate-form-actions">
-                            <button type="submit" class="btn-generate-submit btn-modal-submit" id="btnSubmitGenerate">Generate Sekarang</button>
+                            @if (($userRole ?? '') === 'Jurusan')
+                                <div style="background:#f1f5f9; color:#475569; padding:10px 18px; border-radius:8px; font-size:13.5px; display:inline-flex; align-items:center; gap:8px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                    <span><strong>Mode Monitoring:</strong> Akun Jurusan hanya berwenang untuk memantau & evaluasi jadwal (generate jadwal dilakukan oleh Prodi / Fakultas).</span>
+                                </div>
+                            @else
+                                <button type="submit" class="btn-generate-submit btn-modal-submit" id="btnSubmitGenerate">Generate Sekarang</button>
+                            @endif
                         </div>
                     </form>
 
@@ -571,6 +753,44 @@
                         </div>
                         @foreach ($logGenerate as $hasil)
                             <div style="margin-bottom:18px;">
+                                @if (! empty($hasil['kegagalan']))
+                                    <div style="background:#fef2f2; border:1px solid #f87171; border-radius:8px; padding:12px 16px; margin-bottom:14px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b91c1c" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                                </svg>
+                                                <span style="color:#b91c1c; font-size:13.5px; font-weight:700;">
+                                                    Diagnosa Penjadwalan: {{ count($hasil['kegagalan']) }} Mata Kuliah Memerlukan Penyesuaian
+                                                </span>
+                                            </div>
+                                            <button type="button" 
+                                                onclick="const el = document.getElementById('diagnosaList-{{ $hasil['semester'] }}'); const isHidden = el.style.display === 'none'; el.style.display = isHidden ? 'flex' : 'none'; this.innerHTML = isHidden ? 'Sembunyikan Detail &times;' : 'Lihat Detail &darr;';" 
+                                                style="background:#ffffff; color:#b91c1c; border:1px solid #fca5a5; border-radius:6px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;">
+                                                Lihat Detail &darr;
+                                            </button>
+                                        </div>
+                                        <div id="diagnosaList-{{ $hasil['semester'] }}" style="display:none; flex-direction:column; gap:10px; margin-top:12px; border-top:1px dashed #fca5a5; padding-top:12px;">
+                                            @foreach ($hasil['kegagalan'] as $keg)
+                                                <div style="background:#ffffff; border:1px solid #fecaca; border-radius:6px; padding:12px; font-size:13px;">
+                                                    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:4px;">
+                                                        <span style="color:#1e293b; font-size:13px;">{{ $keg['kode_mk'] }} - {{ $keg['nama_mk'] }} ({{ $keg['sks'] }} SKS)</span>
+                                                        <span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-size:11.5px;">{{ $keg['prodi'] }}</span>
+                                                    </div>
+                                                    <div style="color:#b91c1c; margin-top:4px;">
+                                                        <strong>Penyebab:</strong> {{ $keg['alasan'] }}
+                                                    </div>
+                                                    <div style="color:#15803d; margin-top:3px;">
+                                                        <strong>Rekomendasi Solusi:</strong> {{ $keg['rekomendasi'] }}
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <p style="font-weight:600; margin-bottom:6px;">
                                     Semester {{ $hasil['semester'] }} &rarr; {{ $hasil['jumlah'] }} jadwal
                                     @if (! empty($hasil['slot_pilihan']))
@@ -608,13 +828,30 @@
                         <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                             {{-- Filter Dropdown --}}
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <label for="filterSemesterSelect" style="font-size:0.9rem; font-weight:600; color:#1e293b; white-space:nowrap;">Tampilkan:</label>
+                                <label for="filterSemesterSelect" style="font-size:0.9rem; font-weight:600; color:#1e293b; white-space:nowrap;">Semester:</label>
                                 <select id="filterSemesterSelect" onchange="filterSemester(this.value)" 
                                     style="padding:7px 14px; border:1.5px solid #cbd5e1; border-radius:18px; font-size:0.9rem; outline:none; background:#ffffff; color:#1e293b; cursor:pointer;">
                                     <option value="all">Semua Semester</option>
                                     {{-- Options dynamically rendered by JS based on active toggle --}}
                                 </select>
                             </div>
+
+                            {{-- Filter Prodi Dropdown --}}
+                            @if (($userRole ?? '') === 'Prodi')
+                                <span style="font-size:0.9rem; font-weight:600; color:#1e293b; background:#f1f5f9; padding:6px 14px; border-radius:18px; border:1px solid #cbd5e1;">
+                                    Prodi: {{ $userProdi ?? 'Teknik Informatika' }}
+                                </span>
+                            @else
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <label for="filterProdiSelect" style="font-size:0.9rem; font-weight:600; color:#1e293b; white-space:nowrap;">Prodi:</label>
+                                    <select id="filterProdiSelect" onchange="filterProdi(this.value)" 
+                                        style="padding:7px 14px; border:1.5px solid #cbd5e1; border-radius:18px; font-size:0.9rem; outline:none; background:#ffffff; color:#1e293b; cursor:pointer; font-weight:600;">
+                                        <option value="all">Semua Prodi</option>
+                                        <option value="Teknik Informatika">Teknik Informatika</option>
+                                        <option value="Teknik Elektro">Teknik Elektro</option>
+                                    </select>
+                                </div>
+                            @endif
 
                             {{-- Pill Toggle Ganjil | Genap --}}
                             <div class="pill-toggle-container" style="display:inline-flex; background:#e2e8f0; padding:4px; border-radius:30px; user-select:none;">
@@ -628,7 +865,7 @@
                                 </button>
                             </div>
 
-                            @if ($jadwal->isNotEmpty())
+                            @if (($userRole ?? '') !== 'Jurusan' && $jadwal->isNotEmpty())
                                 <button type="button" class="btn-add" onclick="openModalHapusSemua('jadwal_only')" 
                                     style="background:#dc2626; padding:7px 16px; font-size:0.875rem;" title="Hapus semua jadwal kuliah yang telah di-generate">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;">
@@ -660,26 +897,73 @@
     </main>
 </div>
 
-{{-- ============ MODAL IMPORT MK ============ --}}
+{{-- ============ MODAL IMPORT MK (SMART IMPORTER WORKFLOW) ============ --}}
 <div class="modal-backdrop" id="modalImportMk">
-    <div class="modal-window" style="max-width: 520px;">
+    <div class="modal-window" id="modalImportMkWindow" style="max-width: 600px; transition: max-width 0.3s ease;">
         <div class="modal-header-blue">
-            <h3>Import Mata Kuliah</h3>
+            <h3>Smart Import Mata Kuliah (Excel / Spreadsheet)</h3>
         </div>
         <div class="modal-body">
             <form action="{{ route('penjadwalan.import') }}" method="POST" enctype="multipart/form-data" class="modal-form" id="formImportSpreadsheet">
                 @csrf
+                <input type="hidden" name="verified_items" id="verifiedItemsInput">
+
                 <div class="modal-form-row" style="align-items: flex-start;">
                     <label for="importFile" style="padding-top:8px;">File Spreadsheet</label>
                     <div class="modal-input-container" style="flex-direction:column; align-items:flex-start; gap:6px;">
                         <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet" required>
-                        <span style="font-size:12px; color:#64748b;">Mendukung format: .xlsx, .xls, .csv, dan .ods (Google Sheets / Excel)</span>
+                        <span style="font-size:12px; color:#64748b;">Mendukung: Excel (.xlsx, .xls), CSV (.csv), dan ODS (.ods).</span>
                     </div>
                 </div>
 
-                <div style="padding:12px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; font-size:13px; color:#0369a1; line-height:1.6; margin-top:8px;">
-                    <strong>Otomatis Membaca Kolom:</strong><br>
-                    Sistem akan membaca dan menyesuaikan posisi kolom secara otomatis (Kode MK, Nama Mata Kuliah, SKS, Semester, Tipe, Dosen, dll.). Anda tidak perlu mengatur kolom secara manual.
+                <div id="importPreviewStatus" style="display:none; padding:12px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; font-size:13px; margin-top:12px;"></div>
+
+                {{-- Interactive Smart Preview Section --}}
+                <div id="importPreviewContainer" style="display:none; margin-top:16px;">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:14px;">
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-align:center;">
+                            <span style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Baris</span>
+                            <div id="badgeTotal" style="font-size:18px; font-weight:700; color:#1e293b; margin-top:2px;">0</div>
+                        </div>
+                        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; text-align:center;">
+                            <span style="font-size:11px; color:#166534; font-weight:600; text-transform:uppercase;">Dikenali</span>
+                            <div id="badgeDikenali" style="font-size:18px; font-weight:700; color:#15803d; margin-top:2px;">0</div>
+                        </div>
+                        <div style="background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px; text-align:center;">
+                            <span style="font-size:11px; color:#854d0e; font-weight:600; text-transform:uppercase;">Duplikat</span>
+                            <div id="badgeDuplikat" style="font-size:18px; font-weight:700; color:#a16207; margin-top:2px;">0</div>
+                        </div>
+                        <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px; text-align:center;">
+                            <span style="font-size:11px; color:#9a3412; font-weight:600; text-transform:uppercase;">Perlu Verifikasi</span>
+                            <div id="badgePerluVerifikasi" style="font-size:18px; font-weight:700; color:#c2410c; margin-top:2px;">0</div>
+                        </div>
+                        <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px; text-align:center;">
+                            <span style="font-size:11px; color:#0369a1; font-weight:600; text-transform:uppercase;">Dosen Baru</span>
+                            <div id="badgeDosenBaru" style="font-size:18px; font-weight:700; color:#0284c7; margin-top:2px;">0</div>
+                        </div>
+                    </div>
+
+                    <div style="max-height: 280px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px;">
+                        <table class="data-table" style="font-size: 12.5px; margin: 0;">
+                            <thead>
+                                <tr style="background:#f8fafc; position:sticky; top:0; z-index:1;">
+                                    <th style="padding:8px;">Kode MK</th>
+                                    <th style="padding:8px;">Nama Mata Kuliah</th>
+                                    <th style="padding:8px;">SKS</th>
+                                    <th style="padding:8px;">Sem</th>
+                                    <th style="padding:8px;">Kelas</th>
+                                    <th style="padding:8px;">Prodi</th>
+                                    <th style="padding:8px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="importInfoDefault" style="padding:12px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; font-size:13px; color:#0369a1; line-height:1.6; margin-top:8px;">
+                    <strong>Smart Auto-Classification:</strong><br>
+                    Sistem mendeteksi Sheet1 & Sheet2, mengklasifikasi MK Universitas (UNV), MK Fakultas (FST), MK Prodi, serta memetakan inisial dosen (MP, NH, dll.) secara otomatis.
                 </div>
 
                 <div class="modal-footer-buttons" style="margin-top:20px;">
@@ -859,6 +1143,83 @@
     </div>
 </div>
 
+{{-- ============ MODAL INPUT/EDIT RUANGAN ============ --}}
+<div class="modal-backdrop" id="modalRuangan">
+    <div class="modal-window">
+        <div class="modal-header-blue">
+            <h3 id="modalRuanganTitle">Tambah Ruangan</h3>
+        </div>
+        <div class="modal-body">
+            <form id="formRuangan" method="POST" class="modal-form">
+                @csrf
+                <input type="hidden" name="_method" id="ruanganMethod" value="">
+
+                <div class="modal-form-row">
+                    <label for="ruanganKode">Kode Ruangan</label>
+                    <div class="modal-input-container">
+                        <input type="text" id="ruanganKode" name="kode" placeholder="Contoh: R01-FTTK, LAB-03" required>
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganNama">Nama Ruangan</label>
+                    <div class="modal-input-container">
+                        <input type="text" id="ruanganNama" name="nama" placeholder="Contoh: Ruang Kelas 01 FTTK" required>
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganTipe">Tipe Ruangan</label>
+                    <div class="modal-input-container">
+                        <select id="ruanganTipe" name="tipe" required>
+                            <option value="Ruang Kelas">Ruang Kelas</option>
+                            <option value="Lab">Laboratorium (Lab)</option>
+                            <option value="Aula">Aula</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganKapasitas">Kapasitas (Kursi)</label>
+                    <div class="modal-input-container">
+                        <input type="number" id="ruanganKapasitas" name="kapasitas" min="1" max="500" value="40" required>
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganGedung">Gedung</label>
+                    <div class="modal-input-container">
+                        <input type="text" id="ruanganGedung" name="gedung" placeholder="Contoh: Gedung FTTK / Utama">
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganLantai">Lantai</label>
+                    <div class="modal-input-container">
+                        <input type="text" id="ruanganLantai" name="lantai" placeholder="Contoh: 1, 2, atau 3">
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="ruanganIsActive">Status Aktif</label>
+                    <div class="modal-input-container">
+                        <select id="ruanganIsActive" name="is_active">
+                            <option value="1">Aktif (Dipakai untuk generate jadwal)</option>
+                            <option value="0">Nonaktif (Jangan dipakai generate)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer-buttons">
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal('modalRuangan')">Batal</button>
+                    <button type="submit" class="btn-modal-submit">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {{-- ============ MODAL EDIT PROFILE ============ --}}
 <div class="modal-backdrop" id="modalEditProfile">
     <div class="modal-window">
@@ -930,6 +1291,8 @@
 <script>
 const MK_FORM_ACTION_STORE = "{{ route('penjadwalan.store') }}";
 const MK_FORM_ACTION_UPDATE = "{{ route('penjadwalan.update', ['mataKuliah' => '__ID__']) }}";
+const RUANGAN_FORM_ACTION_STORE = "{{ route('ruangan.store') }}";
+const RUANGAN_FORM_ACTION_UPDATE = "{{ route('ruangan.update', ['ruangan' => '__ID__']) }}";
 
 let currentPeriode = 'ganjil';
 
@@ -1022,6 +1385,56 @@ function filterSemester(val) {
     });
 }
 
+// Filter prodi tertentu di tab jadwal
+function filterProdi(val) {
+    const rows = document.querySelectorAll('.jadwal-row-item');
+    const filterLower = (val || 'all').toLowerCase();
+
+    rows.forEach(r => {
+        const rowProdi = (r.getAttribute('data-prodi') || '').toLowerCase();
+        let show = true;
+        if (filterLower !== 'all' && filterLower !== 'semua') {
+            if (filterLower.includes('informatika') || filterLower === 'ti') {
+                show = rowProdi.includes('informatika') && !rowProdi.includes('elektro');
+            } else if (filterLower.includes('elektro') || filterLower === 'te') {
+                show = rowProdi.includes('elektro') && !rowProdi.includes('informatika');
+            } else {
+                show = rowProdi.includes(filterLower);
+            }
+        }
+        r.style.display = show ? '' : 'none';
+    });
+
+    // Update group counts per hari
+    document.querySelectorAll('.hari-jadwal-group').forEach(grp => {
+        const visibleRows = grp.querySelectorAll('.jadwal-row-item:not([style*="display: none"])');
+        const badge = grp.querySelector('.hari-count-badge');
+        if (badge) {
+            badge.textContent = visibleRows.length + ' kelas';
+        }
+        grp.style.display = visibleRows.length > 0 ? '' : 'none';
+    });
+
+    // Update semester accordion headers
+    document.querySelectorAll('.semester-section').forEach(sec => {
+        const visibleRows = sec.querySelectorAll('.jadwal-row-item:not([style*="display: none"])');
+        const sem = sec.getAttribute('data-semester');
+        const badge = document.getElementById('accordion-badge-' + sem);
+        if (badge) {
+            badge.textContent = visibleRows.length > 0 ? 'Terjadwal (' + visibleRows.length + ')' : 'Kosong';
+            if (visibleRows.length > 0) {
+                badge.style.background = '#e0f2fe';
+                badge.style.color = '#0284c7';
+            } else {
+                badge.style.background = '#f1f5f9';
+                badge.style.color = '#94a3b8';
+            }
+        }
+    });
+
+    localStorage.setItem('penjadwalan_filter_prodi', val);
+}
+
 // Accordion Collapse / Expand per Semester
 function toggleAccordion(sem) {
     const body = document.getElementById('accordion-body-' + sem);
@@ -1057,10 +1470,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. Cek parameter session flash (setelah generate) atau URL query atau localStorage
     const serverTab = "{{ session('tab_aktif') }}";
     const serverPeriode = "{{ session('periode_aktif') }}";
+    const serverProdi = "{{ session('prodi_aktif') }}";
     const urlParams = new URLSearchParams(window.location.search);
     const queryPeriode = urlParams.get('periode');
     const localPeriode = localStorage.getItem('penjadwalan_periode');
     const localTab = localStorage.getItem('penjadwalan_active_tab');
+    const localProdi = localStorage.getItem('penjadwalan_filter_prodi');
+
+    // Tentukan filter prodi awal
+    const prodiSelect = document.getElementById('filterProdiSelect');
+    if (prodiSelect) {
+        if (serverProdi && serverProdi !== 'all') {
+            prodiSelect.value = serverProdi;
+            filterProdi(serverProdi);
+            localStorage.setItem('penjadwalan_filter_prodi', serverProdi);
+        } else if (localProdi) {
+            prodiSelect.value = localProdi;
+            filterProdi(localProdi);
+        }
+    }
 
     // Tentukan periode awal
     let targetPeriode = 'ganjil';
@@ -1071,7 +1499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (localPeriode && (localPeriode === 'ganjil' || localPeriode === 'genap')) {
         targetPeriode = localPeriode;
     }
-    switchPeriode(targetPeriode, false);
+    switchPeriode(targetPeriode, true);
 
     // Tentukan tab awal
     let targetTab = 'tab-input';
@@ -1109,6 +1537,43 @@ function openTambahMk() {
     document.getElementById('mkKapasitas').value = '30';
     document.getElementById('mkProdi').value = 'Teknik Informatika';
     openModal('modalMk');
+}
+
+// Modal Tambah & Edit Ruangan
+function openTambahRuangan() {
+    const form = document.getElementById('formRuangan');
+    form.action = RUANGAN_FORM_ACTION_STORE;
+    form.reset();
+    document.getElementById('ruanganMethod').value = '';
+    document.getElementById('modalRuanganTitle').textContent = 'Tambah Ruangan';
+    document.getElementById('ruanganKode').readOnly = false;
+    document.getElementById('ruanganKapasitas').value = '40';
+    document.getElementById('ruanganTipe').value = 'Ruang Kelas';
+    document.getElementById('ruanganIsActive').value = '1';
+    openModal('modalRuangan');
+}
+
+function openEditRuangan(r) {
+    const form = document.getElementById('formRuangan');
+    form.action = RUANGAN_FORM_ACTION_UPDATE.replace('__ID__', r.id);
+    document.getElementById('ruanganMethod').value = 'PUT';
+    document.getElementById('modalRuanganTitle').textContent = 'Edit Ruangan ' + r.kode;
+    document.getElementById('ruanganKode').value = r.kode;
+    document.getElementById('ruanganNama').value = r.nama;
+    document.getElementById('ruanganTipe').value = r.tipe;
+    document.getElementById('ruanganKapasitas').value = r.kapasitas;
+    document.getElementById('ruanganGedung').value = r.gedung || '';
+    document.getElementById('ruanganLantai').value = r.lantai || '';
+    document.getElementById('ruanganIsActive').value = r.is_active ? '1' : '0';
+    openModal('modalRuangan');
+}
+
+function konfirmasiHapusRuangan(event, kode) {
+    if (!confirm('Yakin ingin menghapus ruangan ' + kode + '?')) {
+        event.preventDefault();
+        return false;
+    }
+    return true;
 }
 
 function openEditMk(mk) {
@@ -1159,9 +1624,109 @@ function openModalHapusSemua(scope) {
     openModal('modalHapusSemua');
 }
 
-// Disabled state saat submit impor berjalan
+// Disabled state saat submit impor berjalan & Smart Preview
 document.addEventListener('DOMContentLoaded', function() {
     const formImportEl = document.getElementById('formImportSpreadsheet');
+    const importFileInput = document.getElementById('importFile');
+    const modalWindow = document.getElementById('modalImportMkWindow');
+    const previewContainer = document.getElementById('importPreviewContainer');
+    const previewStatus = document.getElementById('importPreviewStatus');
+    const previewTableBody = document.getElementById('previewTableBody');
+    const verifiedInput = document.getElementById('verifiedItemsInput');
+    const submitBtn = document.getElementById('btnSubmitImport');
+    const infoDefault = document.getElementById('importInfoDefault');
+
+    if (importFileInput) {
+        importFileInput.addEventListener('change', function() {
+            if (!this.files || !this.files[0]) return;
+
+            const file = this.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            if (previewStatus) {
+                previewStatus.style.display = 'block';
+                previewStatus.innerHTML = '<div style="display:flex; align-items:center; gap:8px; color:#0369a1;"><strong>Menganalisis file Excel...</strong> (Sheet1, Sheet2, relasi dosen, dan klasifikasi MK)</div>';
+            }
+            if (previewContainer) previewContainer.style.display = 'none';
+
+            fetch('{{ route('penjadwalan.import.preview') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response.success && response.data) {
+                    const data = response.data;
+                    if (modalWindow) modalWindow.style.maxWidth = '920px';
+                    if (previewStatus) previewStatus.style.display = 'none';
+                    if (infoDefault) infoDefault.style.display = 'none';
+                    if (previewContainer) previewContainer.style.display = 'block';
+
+                    // Update badges
+                    if (document.getElementById('badgeTotal')) document.getElementById('badgeTotal').textContent = data.summary.total || 0;
+                    if (document.getElementById('badgeDikenali')) document.getElementById('badgeDikenali').textContent = data.summary.dikenali || 0;
+                    if (document.getElementById('badgeDuplikat')) document.getElementById('badgeDuplikat').textContent = data.summary.duplikat || 0;
+                    if (document.getElementById('badgePerluVerifikasi')) document.getElementById('badgePerluVerifikasi').textContent = data.summary.perlu_verifikasi || 0;
+                    if (document.getElementById('badgeDosenBaru')) document.getElementById('badgeDosenBaru').textContent = data.summary.dosen_baru || 0;
+
+                    // Fill table rows
+                    if (previewTableBody) {
+                        previewTableBody.innerHTML = '';
+                        const itemsToShow = (data.items || []).slice(0, 50);
+                        itemsToShow.forEach(item => {
+                            const tr = document.createElement('tr');
+                            const statusBadge = item.status_verifikasi === 'duplikat'
+                                ? '<span style="background:#fef08a; color:#854d0e; padding:2px 6px; border-radius:4px; font-size:11px;">Duplikat</span>'
+                                : (item.status_verifikasi === 'perlu_verifikasi'
+                                    ? '<span style="background:#fed7aa; color:#9a3412; padding:2px 6px; border-radius:4px; font-size:11px;">Verifikasi</span>'
+                                    : '<span style="background:#bbf7d0; color:#166534; padding:2px 6px; border-radius:4px; font-size:11px;">OK</span>');
+
+                            tr.innerHTML = `
+                                <td style="padding:6px 8px; font-weight:600;">${item.kode_mk || '-'}</td>
+                                <td style="padding:6px 8px;">${item.nama_mk || '-'}</td>
+                                <td style="padding:6px 8px; text-align:center;">${item.sks || 0}</td>
+                                <td style="padding:6px 8px; text-align:center;">${item.semester || 1}</td>
+                                <td style="padding:6px 8px; text-align:center;">${item.kelas || '-'}</td>
+                                <td style="padding:6px 8px;">${item.prodi || '-'}</td>
+                                <td style="padding:6px 8px; text-align:center;">${statusBadge}</td>
+                            `;
+                            previewTableBody.appendChild(tr);
+                        });
+
+                        if ((data.items || []).length > 50) {
+                            const trMore = document.createElement('tr');
+                            trMore.innerHTML = `<td colspan="7" style="text-align:center; padding:8px; color:#64748b; font-style:italic;">... dan ${(data.items.length - 50)} data lainnya</td>`;
+                            previewTableBody.appendChild(trMore);
+                        }
+                    }
+
+                    // Save verified items JSON for submission
+                    if (verifiedInput) {
+                        verifiedInput.value = JSON.stringify(data.items);
+                    }
+
+                    if (submitBtn) {
+                        submitBtn.textContent = 'Konfirmasi & Simpan (' + (data.summary.total || 0) + ' MK)';
+                    }
+                } else {
+                    if (previewStatus) {
+                        previewStatus.innerHTML = '<div style="color:#b91c1c;">Gagal membaca pratinjau: ' + (response.message || 'Format tidak sesuai') + '. Anda tetap bisa klik Import Sekarang.</div>';
+                    }
+                }
+            })
+            .catch(err => {
+                if (previewStatus) {
+                    previewStatus.innerHTML = '<div style="color:#64748b;">Pratinjau otomatis tidak tersedia. Silakan klik Import Sekarang langsung.</div>';
+                }
+            });
+        });
+    }
+
     if (formImportEl) {
         formImportEl.addEventListener('submit', function() {
             const btn = document.getElementById('btnSubmitImport');

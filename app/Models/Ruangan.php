@@ -34,6 +34,22 @@ class Ruangan extends Model
         return $query->where('tipe', 'Ruang Kelas');
     }
 
+    public const DEFAULT_KODES = [
+        'R01-FTTK', 'R02-FTTK', 'R03-FTTK', 'R04-FTTK',
+        'R05-FTTK', 'R06-FTTK', 'R07-FTTK', 'R08-FTTK',
+        'R09-FTTK', 'R10-FTTK', 'R11-FTTK', 'R12-FTTK',
+        'LAB-01-FTTK', 'LAB-02-FTTK',
+    ];
+
+    /**
+     * Mengecek apakah ruangan ini merupakan ruangan bawaan/resmi kampus (12 kelas + 2 lab).
+     */
+    public function isDefault(): bool
+    {
+        return in_array($this->kode, self::DEFAULT_KODES, true)
+            || (bool) preg_match('/^(R(0?[1-9]|1[0-2])|LAB-0?[1-2])-FTTK$/i', (string) $this->kode);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

@@ -387,8 +387,8 @@ class UserManagementTest extends TestCase
     {
         $user = User::where('email', 'randtian@gmail.com')->firstOrFail();
 
-        $this->actingAs($user)->get('/jadwal-kuliah')->assertForbidden();
-        $this->actingAs($user)->get('/penjadwalan')->assertForbidden();
+        $this->actingAs($user)->get('/manajemen-akun')->assertForbidden();
+        $this->actingAs($user)->get('/dashboard')->assertForbidden();
     }
 
     public function test_admin_cannot_edit_own_account_in_users_table(): void

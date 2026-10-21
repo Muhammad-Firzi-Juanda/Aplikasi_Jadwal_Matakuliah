@@ -124,13 +124,13 @@ class ProdiManagementController extends Controller
         // Verify rombel belongs to this prodi
         $rombel = Rombel::with('mataKuliah')->findOrFail($validated['rombel_id']);
         if ($rombel->mataKuliah->prodi !== $prodiName) {
-            return back()->with('flash_error', 'Rombel tidak属于 prodi Anda!');
+            return back()->with('flash_error', 'Rombel bukan milik prodi Anda!');
         }
 
         // Verify dosen belongs to this prodi
         $dosen = Dosen::findOrFail($validated['dosen_id']);
         if ($dosen->prodi !== $prodiName) {
-            return back()->with('flash_error', 'Dosen tidak属于 prodi Anda!');
+            return back()->with('flash_error', 'Dosen bukan milik prodi Anda!');
         }
 
         // Check for conflict (same ruangan, same hari, overlapping time)

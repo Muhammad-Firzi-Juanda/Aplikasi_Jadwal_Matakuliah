@@ -234,7 +234,7 @@
                                         <td>{{ $j->rombel->mataKuliah->nama_mk ?? '-' }}</td>
                                         <td>{{ $j->dosen->nama ?? '-' }}</td>
                                         <td>{{ $j->ruangan->kode ?? '-' }}</td>
-                                        <td>{{ $j->rombel->kode_rombel ?? '-' }}</td>
+                                        <td>{{ $j->rombel->kode_rombel ?? '-' }} @if($j->rombel->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $j->rombel->kelas }}</span>@endif</td>
                                     </tr>
                                 @endforeach
                             </tbody>

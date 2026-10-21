@@ -15,15 +15,15 @@ class FakultasDashboardController extends Controller
     {
         $stats = [
             'total_prodi' => Prodi::count(),
-            'total_dosen' => Dosen::count(),
-            'total_mata_kuliah' => MataKuliahDetail::count(),
-            'total_jadwal' => Jadwal::where('is_active', true)->count(),
+            'total_dosen' => Dosen::where('is_active', 1)->count(),
+            'total_mata_kuliah' => MataKuliahDetail::where('is_active', 1)->count(),
+            'total_jadwal' => Jadwal::where('is_active', 1)->count(),
         ];
 
         $prodis = Prodi::with('fakultas')->orderBy('nama')->get();
         $fakultas = Fakultas::orderBy('nama')->get();
         $jadwals = Jadwal::with(['rombel.mataKuliah', 'dosen', 'ruangan'])
-            ->where('is_active', true)
+            ->where('is_active', 1)
             ->orderBy('hari')
             ->orderBy('jam_mulai')
             ->get()

@@ -15,7 +15,7 @@ class Rombel extends Model
     protected $table = 'rombels';
 
     protected $fillable = [
-        'mata_kuliah_detail_id', 'kode_rombel', 'nomor_rombel',
+        'mata_kuliah_detail_id', 'kode_rombel', 'nomor_rombel', 'kelas',
         'kapasitas', 'ruangan_id', 'hari', 'jam_mulai', 'jam_selesai',
         'dosen_pengampu_id', 'peran_dosen', 'is_active',
     ];

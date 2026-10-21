@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dosen;
+use App\Models\MataKuliah;
 use App\Models\MataKuliahDetail;
+use App\Models\Prodi;
+use App\Models\Rombel;
 use App\Models\Ruangan;
+use App\Services\GeneticSchedulerService;
 use App\Services\MataKuliahImportService;
 use App\Services\SchedulerService;
 use Illuminate\Http\Request;
@@ -22,23 +26,41 @@ class PenjadwalanController extends Controller
 
     public function index()
     {
-        $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
+        $user = auth()->user();
+        $userRole = $user?->role;
+        $userProdi = $user?->prodi?->nama;
+
+        $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota', 'masterMk'])
+            ->where('is_active', 1)
+            ->where('status_tawar', 1)
             ->orderBy('semester')
             ->orderBy('kode_mk');
 
-        if (auth()->user()->role === 'Fakultas') {
-            $query->where('tipe', 'Fakultas');
+        if ($userRole === 'Prodi' && $userProdi) {
+            $query->where(function ($q) use ($userProdi) {
+                $q->where('prodi', 'like', "%{$userProdi}%")
+                    ->orWhereIn('kategori', ['MK Universitas', 'MK Fakultas']);
+            });
         }
 
         $mataKuliah = $query->get()->groupBy('semester');
 
-        $jadwal = DB::table('jadwals')
+        $jadwalQuery = DB::table('jadwals')
             ->join('rombels', 'rombels.id', '=', 'jadwals.rombel_id')
             ->join('mata_kuliah_details', 'mata_kuliah_details.id', '=', 'rombels.mata_kuliah_detail_id')
             ->leftJoin('ruangans', 'ruangans.id', '=', 'jadwals.ruangan_id')
             ->leftJoin('dosens', 'dosens.id', '=', 'jadwals.dosen_id')
             ->where('jadwals.is_active', 1)
-            ->where('rombels.is_active', 1)
+            ->where('rombels.is_active', 1);
+
+        if ($userRole === 'Prodi' && $userProdi) {
+            $jadwalQuery->where(function ($q) use ($userProdi) {
+                $q->where('mata_kuliah_details.prodi', 'like', "%{$userProdi}%")
+                    ->orWhereIn('mata_kuliah_details.kategori', ['MK Universitas', 'MK Fakultas']);
+            });
+        }
+
+        $jadwal = $jadwalQuery
             ->select([
                 'mata_kuliah_details.semester',
                 'mata_kuliah_details.kode_mk',
@@ -46,7 +68,9 @@ class PenjadwalanController extends Controller
                 'mata_kuliah_details.sks',
                 'mata_kuliah_details.tipe',
                 'mata_kuliah_details.prodi',
+                'mata_kuliah_details.kelas',
                 'rombels.kode_rombel',
+                'rombels.kelas',
                 'rombels.nomor_rombel',
                 'jadwals.hari',
                 'jadwals.jam_mulai',
@@ -66,58 +90,140 @@ class PenjadwalanController extends Controller
             'mataKuliah' => $mataKuliah,
             'jadwal' => $jadwal,
             'dosens' => Dosen::orderBy('nama')->get(),
+            'ruangans' => Ruangan::orderBy('kode')->get(),
             'ruangan' => Ruangan::orderBy('kode')->get(),
             'ruanganAktif' => Ruangan::where('is_active', 1)->orderBy('kode')->get(),
+            'daftarProdi' => Prodi::orderBy('nama')->get(),
             'semesterGanjil' => self::SEMESTER_GANJIL,
             'semesterGenap' => self::SEMESTER_GENAP,
             'semesterAll' => self::SEMESTER_ALL,
             'maksPilihan' => SchedulerService::MAKS_PILIHAN,
             'logGenerate' => session('log_generate', []),
+            'userRole' => $userRole,
+            'userProdi' => $userProdi,
+            'prodiAktif' => session('prodi_aktif', 'all'),
         ]);
     }
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
+
         $data = $this->validasi($request);
 
-        $mk = MataKuliahDetail::create($data);
+        // Jika user adalah Prodi, kunci prodi ke prodi milik user
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            $data['prodi'] = $user->prodi->nama;
+        }
 
-        return $this->kembali('Mata kuliah '.$mk->kode_mk.' berhasil ditambahkan.');
+        // Sinkronisasi ke master mata_kuliah jika ada
+        $cleanKode = preg_replace('/-[A-Za-z0-9]+$/', '', $data['kode_mk']);
+        $master = MataKuliah::firstOrCreate(
+            ['kode' => $cleanKode],
+            [
+                'nama' => $data['nama_mk'],
+                'sks' => $data['sks'],
+                'semester' => $data['semester'],
+                'tipe' => 'Prodi',
+                'kategori' => 'MK Prodi Wajib',
+                'pemilik' => $data['prodi'],
+                'level_id' => 1,
+            ]
+        );
+        $data['master_mk_id'] = $master->id;
+
+        MataKuliahDetail::create($data);
+
+        return $this->kembali('Mata kuliah berhasil ditambahkan.');
     }
 
     public function update(Request $request, MataKuliahDetail $mataKuliah)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
+
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            if (! str_contains($mataKuliah->prodi, $user->prodi->nama)) {
+                return back()->with('flash_error', 'Anda tidak memiliki hak akses mengubah mata kuliah prodi lain.');
+            }
+        }
+
         $data = $this->validasi($request, $mataKuliah->id);
+
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            $data['prodi'] = $user->prodi->nama;
+        }
+
+        $cleanKode = preg_replace('/-[A-Za-z0-9]+$/', '', $data['kode_mk']);
+        $master = MataKuliah::firstOrCreate(
+            ['kode' => $cleanKode],
+            [
+                'nama' => $data['nama_mk'],
+                'sks' => $data['sks'],
+                'semester' => $data['semester'],
+                'tipe' => 'Prodi',
+                'kategori' => 'MK Prodi Wajib',
+                'pemilik' => $data['prodi'],
+                'level_id' => 1,
+            ]
+        );
+        $data['master_mk_id'] = $master->id;
 
         $mataKuliah->update($data);
 
-        return $this->kembali('Mata kuliah '.$mataKuliah->kode_mk.' berhasil diperbarui.');
+        return $this->kembali('Mata kuliah berhasil diperbarui.');
     }
 
     public function destroy(MataKuliahDetail $mataKuliah)
     {
-        $kode = $mataKuliah->kode_mk;
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
 
-        DB::table('jadwals')
-            ->whereIn('rombel_id', function ($q) use ($mataKuliah) {
-                $q->select('id')->from('rombels')
-                    ->where('mata_kuliah_detail_id', $mataKuliah->id);
-            })
-            ->delete();
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            if (! str_contains($mataKuliah->prodi, $user->prodi->nama)) {
+                return back()->with('flash_error', 'Anda tidak memiliki hak akses menghapus mata kuliah prodi lain.');
+            }
+        }
 
-        $mataKuliah->rombels()->delete();
+        $rombelIds = $mataKuliah->rombels()->pluck('id');
+        if ($rombelIds->isNotEmpty()) {
+            DB::table('jadwals')->whereIn('rombel_id', $rombelIds)->delete();
+            DB::table('rombels')->whereIn('id', $rombelIds)->delete();
+        }
+
         $mataKuliah->delete();
 
-        return $this->kembali('Mata kuliah '.$kode.' berhasil dihapus.');
+        return $this->kembali('Mata kuliah berhasil dihapus.');
     }
 
     public function destroyAll(Request $request)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
+
+        $userProdi = ($user?->role === 'Prodi') ? $user->prodi?->nama : null;
         $scope = $request->input('scope', 'all');
 
         if ($scope === 'jadwal_only') {
-            DB::table('jadwals')->delete();
-            DB::table('rombels')->delete();
+            if ($userProdi) {
+                $idsRombel = Rombel::whereHas('mataKuliah', fn ($q) => $q->where('prodi', 'like', "%{$userProdi}%"))->pluck('id');
+                DB::table('jadwals')->whereIn('rombel_id', $idsRombel)->delete();
+                DB::table('rombels')->whereIn('id', $idsRombel)->delete();
+            } else {
+                DB::table('jadwals')->delete();
+                DB::table('rombels')->delete();
+            }
+
+            session()->forget('log_generate');
 
             return redirect()
                 ->route('penjadwalan.index')
@@ -125,16 +231,28 @@ class PenjadwalanController extends Controller
                 ->with('flash_success', 'Semua jadwal kuliah berhasil dihapus.');
         }
 
-        // Hapus semua data jadwal, rombel, dan mata kuliah
-        DB::table('jadwals')->delete();
-        DB::table('rombels')->delete();
+        // Hapus data jadwal, rombel, dan mata kuliah
+        if ($userProdi) {
+            $query = MataKuliahDetail::where('prodi', 'like', "%{$userProdi}%");
+            $idsMk = $query->pluck('id');
+            $idsRombel = Rombel::whereIn('mata_kuliah_detail_id', $idsMk)->pluck('id');
+            DB::table('jadwals')->whereIn('rombel_id', $idsRombel)->delete();
+            DB::table('rombels')->whereIn('id', $idsRombel)->delete();
+            $count = $query->count();
+            $query->delete();
+        } else {
+            DB::table('jadwals')->delete();
+            DB::table('rombels')->delete();
 
-        $query = MataKuliahDetail::query();
-        if (auth()->user()->role === 'Fakultas') {
-            $query->where('tipe', 'Fakultas');
+            $query = MataKuliahDetail::query();
+            if ($user?->role === 'Fakultas') {
+                $query->where('tipe', 'Fakultas');
+            }
+            $count = $query->count();
+            $query->delete();
         }
-        $count = $query->count();
-        $query->delete();
+
+        session()->forget(['log_generate', 'prodi_aktif']);
 
         return redirect()
             ->route('penjadwalan.index')
@@ -142,8 +260,13 @@ class PenjadwalanController extends Controller
             ->with('flash_success', 'Semua data mata kuliah ('.$count.' data) dan jadwal berhasil dihapus.');
     }
 
-    public function generate(Request $request, SchedulerService $scheduler)
+    public function generate(Request $request, SchedulerService $scheduler, GeneticSchedulerService $geneticScheduler)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
+
         $request->validate([
             'periode' => ['nullable', 'string', Rule::in(['ganjil', 'genap', 'keduanya', 'custom'])],
             'semester' => ['required', 'array', 'min:1'],
@@ -154,10 +277,19 @@ class PenjadwalanController extends Controller
             'jam_mulai' => ['nullable', 'array'],
             'jam_mulai.*' => ['date_format:H:i'],
             'meta' => ['nullable', 'array'],
+            'algoritma' => ['nullable', 'string', Rule::in(['greedy', 'genetic'])],
         ]);
 
         $semesters = array_map('intval', $request->input('semester'));
-        $prodi = $request->input('prodi') ?: 'Informatika';
+        $prodi = $request->input('prodi') ?: 'Teknik Informatika';
+
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            $prodi = $user->prodi->nama;
+        }
+
+        $prodiScheduler = in_array(strtolower(trim($prodi)), ['semua', 'all'], true) ? null : $prodi;
+
+        $algoritma = $request->input('algoritma', 'greedy');
         $options = array_filter([
             'hari' => $request->input('hari'),
             'jam_mulai' => $request->input('jam_mulai'),
@@ -165,16 +297,33 @@ class PenjadwalanController extends Controller
         ]);
 
         $log = [];
+        $totalBerhasil = 0;
+        $allKegagalan = [];
+
         foreach ($semesters as $sem) {
-            $hasil = $scheduler->generate((int) $sem, $prodi, $options);
+            if ($algoritma === 'genetic') {
+                $hasil = $geneticScheduler->generate((int) $sem, $prodiScheduler, $options);
+            } else {
+                $hasil = $scheduler->generate((int) $sem, $prodiScheduler, $options);
+            }
+
+            $totalBerhasil += $hasil['jumlah_jadwal'] ?? 0;
+            $kegagalanSem = $hasil['kegagalan'] ?? [];
+            if (! empty($kegagalanSem)) {
+                $allKegagalan = array_merge($allKegagalan, $kegagalanSem);
+            }
 
             $log[] = [
                 'semester' => $hasil['semester'],
                 'jumlah' => $hasil['jumlah_jadwal'],
                 'log' => $hasil['log'],
                 'peringatan' => $hasil['peringatan'],
-                'slot_pilihan' => array_column($hasil['slot_pilihan'], 'label'),
-                'kuota_pilihan' => $hasil['kuota_pilihan'],
+                'kegagalan' => $kegagalanSem,
+                'slot_pilihan' => array_column($hasil['slot_pilihan'] ?? [], 'label'),
+                'kuota_pilihan' => $hasil['kuota_pilihan'] ?? 0,
+                'statistik' => $hasil['statistik'] ?? [],
+                'metode' => $hasil['metode'] ?? 'Greedy',
+                'prodi' => $prodi,
             ];
         }
 
@@ -185,12 +334,31 @@ class PenjadwalanController extends Controller
             $periodeTarget = 'genap';
         }
 
-        return redirect()
+        $metodeLabel = $algoritma === 'genetic' ? 'Genetic Algorithm' : 'Greedy Algorithm';
+        $prodiFilterView = $prodiScheduler ?: 'all';
+
+        // Simpan ke persistent session agar tidak hilang saat pengguna melakukan refresh halaman
+        session([
+            'tab_aktif' => 'tab-jadwal',
+            'periode_aktif' => $periodeTarget,
+            'prodi_aktif' => $prodiFilterView,
+            'log_generate' => $log,
+        ]);
+
+        $response = redirect()
             ->route('penjadwalan.index')
             ->with('tab_aktif', 'tab-jadwal')
             ->with('periode_aktif', $periodeTarget)
-            ->with('log_generate', $log)
-            ->with('flash_success', 'Jadwal berhasil digenerate untuk semester '.implode(', ', $semesters).'.');
+            ->with('prodi_aktif', $prodiFilterView)
+            ->with('log_generate', $log);
+
+        if (! empty($allKegagalan)) {
+            $totalGagal = count($allKegagalan);
+
+            return $response->with('flash_warning', "Penjadwalan selesai dengan {$totalBerhasil} kelas berhasil dan {$totalGagal} kelas membutuhkan penyesuaian/gagal ditempatkan. Silakan periksa Log Diagnosa Penjadwalan.");
+        }
+
+        return $response->with('flash_success', "Jadwal berhasil digenerate 100% menggunakan {$metodeLabel} untuk semester ".implode(', ', $semesters).'.');
     }
 
     public function downloadTemplate(MataKuliahImportService $importer): BinaryFileResponse
@@ -202,6 +370,14 @@ class PenjadwalanController extends Controller
 
     public function previewImport(Request $request, MataKuliahImportService $importer)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.',
+            ], 403);
+        }
+
         $request->validate([
             'file' => ['required', 'file', 'max:10240'],
         ]);
@@ -232,6 +408,11 @@ class PenjadwalanController extends Controller
 
     public function import(Request $request, MataKuliahImportService $importer)
     {
+        $user = auth()->user();
+        if ($user?->role === 'Jurusan') {
+            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
+        }
+
         $request->validate([
             'file' => ['required', 'file', 'max:10240'],
             'mapping' => ['nullable', 'array'],
@@ -249,8 +430,13 @@ class PenjadwalanController extends Controller
 
         $path = $request->file('file')->getRealPath();
         $mapping = $request->input('mapping') ?: [];
+        $defaultProdi = $request->input('default_prodi') ?: 'Informatika';
+        if ($user?->role === 'Prodi' && $user->prodi?->nama) {
+            $defaultProdi = $user->prodi->nama;
+        }
+
         $defaults = [
-            'prodi' => $request->input('default_prodi') ?: 'Informatika',
+            'prodi' => $defaultProdi,
             'tipe' => $request->input('default_tipe') ?: 'Wajib',
         ];
 
@@ -318,21 +504,8 @@ class PenjadwalanController extends Controller
             'jumlah_kelas.integer' => 'Jumlah kelas harus berupa angka.',
             'kapasitas_per_kelas.required' => 'Kapasitas per kelas wajib diisi.',
             'kapasitas_per_kelas.integer' => 'Kapasitas per kelas harus berupa angka.',
-        ], [
-            'kode_mk' => 'kode MK',
-            'nama_mk' => 'nama MK',
-            'sks' => 'SKS',
-            'semester' => 'semester',
-            'tipe' => 'tipe',
-            'prodi' => 'prodi',
-            'dosen_ketua_id' => 'dosen ketua',
-            'dosen_anggota_id' => 'dosen anggota',
-            'jumlah_kelas' => 'jumlah kelas',
-            'kapasitas_per_kelas' => 'kapasitas per kelas',
-            'butuh_lab' => 'kebutuhan laboratorium',
         ]);
 
-        // Field nullable yang tidak dikirim tidak muncul di hasil validasi.
         return [
             'kode_mk' => trim($validated['kode_mk']),
             'nama_mk' => trim($validated['nama_mk']),

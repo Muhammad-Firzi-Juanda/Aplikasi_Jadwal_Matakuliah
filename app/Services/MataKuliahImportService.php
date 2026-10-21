@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Dosen;
+use App\Models\MataKuliah;
 use App\Models\MataKuliahDetail;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
@@ -16,6 +17,7 @@ class MataKuliahImportService
         'nama_mk' => ['label' => 'Nama Mata Kuliah', 'required' => true],
         'sks' => ['label' => 'SKS', 'required' => true],
         'semester' => ['label' => 'Semester', 'required' => true],
+        'kelas' => ['label' => 'Kelas (A, B, C)', 'required' => false],
         'tipe' => ['label' => 'Tipe (Wajib / Pilihan)', 'required' => false],
         'prodi' => ['label' => 'Program Studi', 'required' => false],
         'dosen_ketua' => ['label' => 'Dosen Ketua / Pengampu Utama', 'required' => false],
@@ -30,6 +32,7 @@ class MataKuliahImportService
         'nama_mk',
         'sks',
         'semester',
+        'kelas',
         'tipe',
         'prodi',
         'dosen_ketua',
@@ -61,6 +64,10 @@ class MataKuliahImportService
         'semester' => [
             'semester', 'smt', 'sem', 'tingkat', 'term', 'smstr', 'semester ke',
             'smt ke', 'sem ke', 'thn smt', 'sem.', 'smt.', 'semest',
+        ],
+        'kelas' => [
+            'kelas', 'class', 'rombel', 'group', 'grup', 'kel', 'kls',
+            'kelas a', 'kelas b', 'kelas c', 'kelas d', 'kelas e',
         ],
         'tipe' => [
             'tipe', 'type', 'jenis', 'kategori', 'sifat', 'status', 'wajib pilihan',
@@ -412,9 +419,9 @@ class MataKuliahImportService
     }
 
     /**
-     * Membaca kolom dan sampel data dari spreadsheet.
+     * Membaca kolom, sampel data, dan analisis lengkap dari spreadsheet.
      */
-    public function preview(string $path): array
+    public function preview(string $path, array $defaults = []): array
     {
         $spreadsheet = $this->loadSpreadsheet($path);
         $rows = $this->getBestSheetData($spreadsheet);
@@ -426,6 +433,11 @@ class MataKuliahImportService
         $headerRowIndex = $this->findHeaderRow($rows);
         $headerRow = $rows[$headerRowIndex] ?? [];
         $suggestedMapping = $this->autoDetectHeaderMap($rows, $headerRowIndex);
+
+        $defaultProdi = trim((string) ($defaults['prodi'] ?? 'Informatika')) ?: 'Informatika';
+        $defaultTipe = in_array($defaults['tipe'] ?? '', ['Wajib', 'Pilihan'], true) ? $defaults['tipe'] : 'Wajib';
+
+        $analysis = $this->analyzeData($rows, $headerRowIndex, $suggestedMapping, $defaultProdi, $defaultTipe);
 
         $columns = [];
         foreach ($headerRow as $colIdx => $colName) {
@@ -450,7 +462,7 @@ class MataKuliahImportService
         }
 
         $previewRows = [];
-        for ($r = $headerRowIndex + 1; $r < count($rows) && count($previewRows) < 3; $r++) {
+        for ($r = $headerRowIndex + 1; $r < count($rows) && count($previewRows) < 5; $r++) {
             if (! $this->isEmptyRow($rows[$r])) {
                 $previewRows[] = array_map(fn ($v) => is_string($v) ? trim($v) : $v, $rows[$r]);
             }
@@ -463,52 +475,20 @@ class MataKuliahImportService
             'suggested_mapping' => $suggestedMapping,
             'preview_rows' => $previewRows,
             'target_fields' => self::TARGET_FIELDS,
+            'summary' => $analysis['summary'],
+            'items' => $analysis['items'],
+            'prodis' => $analysis['prodis'],
         ];
     }
 
     /**
-     * Impor data mata kuliah dari file spreadsheet secara 100% otomatis.
+     * Menganalisis seluruh baris spreadsheet, mendeteksi anomali, tabel dosen, dan klasifikasi MK.
      */
-    public function import(string $path, array $mapping = [], array $defaults = []): array
+    public function analyzeData(array $rows, int $headerRowIndex, array $headerMap, string $defaultProdi = 'Informatika', string $defaultTipe = 'Wajib'): array
     {
-        $spreadsheet = $this->loadSpreadsheet($path);
-        $rows = $this->getBestSheetData($spreadsheet);
-
-        if (empty($rows)) {
-            return $this->result(0, 0, [], ['File kosong atau tidak memiliki data.']);
-        }
-
-        $headerRowIndex = $this->findHeaderRow($rows);
-
-        // Jika mapping disediakan (manual atau sebagian), gunakan mapping tersebut; jika tidak, gunakan auto-detect lengkap
-        if (! empty($mapping)) {
-            $headerMap = [];
-            foreach ($mapping as $field => $col) {
-                if ($col !== null && $col !== '') {
-                    $headerMap[$field] = (int) $col;
-                }
-            }
-            // Lengkapi dengan auto detect jika ada field wajib yang belum terpetakan
-            $autoMap = $this->autoDetectHeaderMap($rows, $headerRowIndex);
-            foreach ($autoMap as $f => $c) {
-                if (! isset($headerMap[$f])) {
-                    $headerMap[$f] = $c;
-                }
-            }
-        } else {
-            $headerMap = $this->autoDetectHeaderMap($rows, $headerRowIndex);
-        }
-
-        $defaultProdi = trim((string) ($defaults['prodi'] ?? 'Informatika')) ?: 'Informatika';
-        $defaultTipe = in_array($defaults['tipe'] ?? '', ['Wajib', 'Pilihan'], true) ? $defaults['tipe'] : 'Wajib';
-
         $dataRows = array_slice($rows, $headerRowIndex + 1);
-        $created = 0;
-        $updated = 0;
-        $failed = [];
-        $seen = [];
 
-        // 1. Ekstrak tabel referensi inisial/kode dosen jika ada (misal tabel "Kode Dosen" - "Dosen")
+        // 1. Ekstrak kamus inisial/kode dosen jika ada (misal baris "Kode Dosen" - "Dosen")
         $lecturerMap = [];
         $isLecturerSection = false;
         foreach ($dataRows as $r) {
@@ -523,14 +503,19 @@ class MataKuliahImportService
 
             if ($isLecturerSection && $col1 !== '' && $col2 !== '') {
                 $lecturerMap[$col1] = $col2;
-                Dosen::firstOrCreate(
-                    ['nama' => $col2],
-                    ['jabatan' => 'Ketua & Anggota', 'prodi' => $defaultProdi, 'is_active' => true]
-                );
             }
         }
 
-        // Hitung jumlah baris/kelas per kode_mk untuk menentukan jumlah paralel secara akurat
+        // Cache nama dosen yang sudah ada di database untuk deteksi dosen baru
+        $existingDosenNames = Dosen::pluck('nama')
+            ->map(fn ($n) => strtolower(trim($n)))
+            ->toArray();
+
+        // Cache mata kuliah yang sudah ada di database (untuk deteksi kode beda tapi nama sama)
+        $existingMks = MataKuliah::all()->keyBy('kode');
+        $existingDetails = MataKuliahDetail::all()->keyBy('kode_mk');
+
+        // Hitung jumlah kemunculan kode_mk
         $kodeMkCounts = [];
         $kodeCol = $headerMap['kode_mk'] ?? null;
         if ($kodeCol !== null) {
@@ -541,6 +526,18 @@ class MataKuliahImportService
                 }
             }
         }
+
+        $items = [];
+        $seenInFile = [];
+        $nameToCodeMap = [];
+        $prodis = [];
+        $counts = [
+            'total' => 0,
+            'dikenali' => 0,
+            'duplikat' => 0,
+            'perlu_verifikasi' => 0,
+            'dosen_baru' => 0,
+        ];
 
         $lastSemester = null;
         $inLecturerSection = false;
@@ -582,7 +579,6 @@ class MataKuliahImportService
 
             $data = $this->extractRowWithDefaults($row, $headerMap, $defaultProdi, $defaultTipe, $index + 1, $lastSemester, $kodeMkCounts);
 
-            // Jika baris tidak memiliki kode_mk maupun nama_mk, anggap baris catatan/kosong
             if (empty($data['kode_mk']) && empty($data['nama_mk'])) {
                 continue;
             }
@@ -600,6 +596,15 @@ class MataKuliahImportService
                 }
             }
 
+            // Multi-dosen splitting pada kolom dosen_ketua (jika berisi 'Dosen A / Dosen B')
+            if (! empty($data['dosen_ketua']) && str_contains($data['dosen_ketua'], '/')) {
+                $parts = array_map('trim', explode('/', $data['dosen_ketua'], 2));
+                $data['dosen_ketua'] = $parts[0];
+                if (empty($data['dosen_anggota']) && ! empty($parts[1])) {
+                    $data['dosen_anggota'] = $parts[1];
+                }
+            }
+
             // Terjemahkan kode inisial dosen pengampu ke nama lengkap dosen jika ada di tabel referensi
             if (! empty($data['dosen_ketua']) && isset($lecturerMap[$data['dosen_ketua']])) {
                 $data['dosen_ketua'] = $lecturerMap[$data['dosen_ketua']];
@@ -613,68 +618,253 @@ class MataKuliahImportService
                 $data['kode_mk'] = 'MK'.str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
             }
 
-            // Jika nama_mk kosong tapi kode_mk ada, gunakan kode sebagai nama
-            if (empty($data['nama_mk'])) {
-                $data['nama_mk'] = 'Mata Kuliah '.$data['kode_mk'];
+            $baseKode = preg_replace('/-[A-Za-z0-9]+$/', '', $data['kode_mk']);
+            $kelasAsli = null;
+            if (isset($data['kelas']) && $data['kelas'] !== null && trim((string) $data['kelas']) !== '') {
+                $kelasAsli = strtoupper(trim((string) $data['kelas']));
+                $fullKodeMk = $baseKode.'-'.$kelasAsli;
+            } else {
+                $fullKodeMk = $data['kode_mk'];
             }
 
-            $seen[$data['kode_mk']] = $line;
+            $kategori = $this->classifyKategori($baseKode, $data['tipe'] ?? 'Wajib', $data['nama_mk'] ?? '', $data['prodi'] ?? '');
+            $pemilik = $this->resolvePemilik($kategori, $data['prodi'] ?? '');
 
-            $errors = $this->validateRow($data);
-            if (! empty($errors)) {
-                $failed[] = 'Baris '.$line.': '.implode(' ', $errors);
-
-                continue;
+            if (! empty($data['prodi']) && ! in_array($data['prodi'], $prodis, true)) {
+                $prodis[] = $data['prodi'];
             }
 
-            $dosenKetuaId = $this->resolveDosen($data['dosen_ketua'] ?? null, $data['prodi']);
-            if (($data['dosen_ketua'] ?? null) && ! $dosenKetuaId) {
-                $failed[] = 'Baris '.$line.': dosen ketua "'.$data['dosen_ketua'].'" tidak ditemukan dan gagal dibuat.';
+            // Evaluasi status dan anomali
+            $status = 'dikenali';
+            $catatan = [];
 
-                continue;
+            // 1. Cek Duplikat
+            if (isset($seenInFile[$fullKodeMk])) {
+                $status = 'duplikat';
+                $catatan[] = "Duplikat di baris {$seenInFile[$fullKodeMk]} pada file ini.";
+            } elseif ($existingDetails->has($fullKodeMk)) {
+                $catatan[] = 'Data penawaran kelas ini sudah ada di database (akan diperbarui).';
+            }
+            $seenInFile[$fullKodeMk] = $line;
+
+            // 2. Cek Nama Sama Tapi Kode Berbeda
+            $normNamaKey = strtolower(trim($data['nama_mk']));
+            if (isset($nameToCodeMap[$normNamaKey]) && $nameToCodeMap[$normNamaKey] !== $baseKode) {
+                $status = ($status === 'duplikat') ? 'duplikat' : 'perlu_verifikasi';
+                $catatan[] = "Nama MK sama dengan kode berbeda: {$baseKode} vs {$nameToCodeMap[$normNamaKey]}.";
+            } else {
+                $nameToCodeMap[$normNamaKey] = $baseKode;
             }
 
-            $dosenAnggotaId = $this->resolveDosen($data['dosen_anggota'] ?? null, $data['prodi']);
-            if (($data['dosen_anggota'] ?? null) && ! $dosenAnggotaId) {
-                $failed[] = 'Baris '.$line.': dosen anggota "'.$data['dosen_anggota'].'" tidak ditemukan dan gagal dibuat.';
-
-                continue;
+            // 3. Cek Dosen Terdaftar
+            if (! empty($data['dosen_ketua']) && ! in_array(strtolower(trim($data['dosen_ketua'])), $existingDosenNames, true)) {
+                $catatan[] = "Dosen ketua '{$data['dosen_ketua']}' belum terdaftar (akan otomatis dibuatkan).";
+                $counts['dosen_baru']++;
+            }
+            if (! empty($data['dosen_anggota']) && ! in_array(strtolower(trim($data['dosen_anggota'])), $existingDosenNames, true)) {
+                $catatan[] = "Dosen anggota '{$data['dosen_anggota']}' belum terdaftar (akan otomatis dibuatkan).";
             }
 
-            // Jika dosen anggota teresolusi sama dengan ketua tapi nama teks aslinya berbeda
-            if ($dosenKetuaId && $dosenKetuaId === $dosenAnggotaId) {
-                $namaKetua = trim((string) ($data['dosen_ketua'] ?? ''));
-                $namaAnggota = trim((string) ($data['dosen_anggota'] ?? ''));
-                if ($namaKetua !== '' && $namaAnggota !== '' && strcasecmp($namaKetua, $namaAnggota) !== 0) {
-                    $newDosen = Dosen::create([
-                        'nama' => $namaAnggota,
-                        'jabatan' => 'Anggota',
-                        'prodi' => $data['prodi'],
-                        'is_active' => true,
-                    ]);
-                    $dosenAnggotaId = $newDosen->id;
-                } else {
-                    $dosenAnggotaId = null;
-                }
+            // 4. Cek Semester & Prodi
+            if (empty($data['semester']) || (int) $data['semester'] < 1 || (int) $data['semester'] > 8) {
+                $status = 'perlu_verifikasi';
+                $catatan[] = 'Semester tidak valid atau tidak terdeteksi.';
+            }
+            if (empty($data['prodi'])) {
+                $status = 'perlu_verifikasi';
+                $catatan[] = 'Program studi tidak terdeteksi.';
             }
 
-            $payload = [
+            $counts['total']++;
+            if ($status === 'dikenali') {
+                $counts['dikenali']++;
+            } elseif ($status === 'duplikat') {
+                $counts['duplikat']++;
+            } else {
+                $counts['perlu_verifikasi']++;
+            }
+
+            $items[] = [
+                'row_index' => $line,
+                'kode_mk' => $fullKodeMk,
+                'kode_induk' => $baseKode,
                 'nama_mk' => $data['nama_mk'],
                 'sks' => (int) $data['sks'],
                 'semester' => (int) $data['semester'],
+                'kelas' => $kelasAsli,
                 'tipe' => $data['tipe'],
+                'kategori' => $kategori,
                 'prodi' => $data['prodi'],
+                'pemilik' => $pemilik,
+                'dosen_ketua' => $data['dosen_ketua'] ?? null,
+                'dosen_anggota' => $data['dosen_anggota'] ?? null,
+                'jumlah_kelas' => 1,
+                'kapasitas_per_kelas' => $data['kapasitas_per_kelas'] ?? 40,
+                'butuh_lab' => (bool) ($data['butuh_lab'] ?? false),
+                'tanpa_ruangan' => (bool) ($data['tanpa_ruangan'] ?? false),
+                'status' => $status,
+                'catatan' => $catatan,
+            ];
+        }
+
+        return [
+            'summary' => $counts,
+            'items' => $items,
+            'prodis' => $prodis,
+            'lecturer_map' => $lecturerMap,
+        ];
+    }
+
+    /**
+     * Klasifikasikan kategori mata kuliah secara otomatis dan objektif.
+     */
+    public function classifyKategori(string $kode, string $tipe, string $nama, ?string $prodi): string
+    {
+        $kodeUpper = strtoupper(trim($kode));
+        $namaLower = strtolower(trim($nama));
+        $tipeLower = strtolower(trim($tipe));
+
+        if (str_starts_with($kodeUpper, 'UNV')) {
+            return 'MK Universitas';
+        }
+        if (str_starts_with($kodeUpper, 'FST')) {
+            return 'MK Fakultas';
+        }
+
+        if (str_starts_with($kodeUpper, 'INF') || str_contains($namaLower, 'informatika')) {
+            return ($tipeLower === 'pilihan' || str_contains($namaLower, 'pilihan')) ? 'MK Prodi Pilihan' : 'MK Prodi Wajib';
+        }
+
+        if (str_starts_with($kodeUpper, 'EEL') || str_contains($namaLower, 'elektro')) {
+            return ($tipeLower === 'pilihan' || str_contains($namaLower, 'pilihan')) ? 'MK Prodi Pilihan' : 'MK Prodi Wajib';
+        }
+
+        if ($tipeLower === 'pilihan' || str_contains($namaLower, 'pilihan')) {
+            return 'MK Prodi Pilihan';
+        }
+
+        return 'MK Prodi Wajib';
+    }
+
+    /**
+     * Tentukan pemilik resmi mata kuliah berdasarkan kategorinya.
+     */
+    public function resolvePemilik(string $kategori, ?string $prodi): string
+    {
+        return match ($kategori) {
+            'MK Universitas' => 'Universitas',
+            'MK Fakultas' => 'Fakultas',
+            default => $prodi ?: 'Umum',
+        };
+    }
+
+    /**
+     * Impor data mata kuliah dari file spreadsheet atau array item yang telah diverifikasi.
+     */
+    public function import(string $path, array $mapping = [], array $defaults = [], array $verifiedItems = []): array
+    {
+        $defaultProdi = trim((string) ($defaults['prodi'] ?? 'Informatika')) ?: 'Informatika';
+        $defaultTipe = in_array($defaults['tipe'] ?? '', ['Wajib', 'Pilihan'], true) ? $defaults['tipe'] : 'Wajib';
+
+        if (! empty($verifiedItems)) {
+            $items = $verifiedItems;
+        } else {
+            $spreadsheet = $this->loadSpreadsheet($path);
+            $rows = $this->getBestSheetData($spreadsheet);
+
+            if (empty($rows)) {
+                return $this->result(0, 0, [], ['File kosong atau tidak memiliki data.']);
+            }
+
+            $headerRowIndex = $this->findHeaderRow($rows);
+            $headerMap = ! empty($mapping) ? $mapping : $this->autoDetectHeaderMap($rows, $headerRowIndex);
+
+            $analysis = $this->analyzeData($rows, $headerRowIndex, $headerMap, $defaultProdi, $defaultTipe);
+            $items = $analysis['items'];
+        }
+
+        if (empty($items)) {
+            return $this->result(0, 0, [], ['Tidak ada baris mata kuliah yang valid untuk diimpor.']);
+        }
+
+        $created = 0;
+        $updated = 0;
+        $failed = [];
+        $seen = [];
+
+        foreach ($items as $item) {
+            $line = $item['row_index'] ?? 0;
+            $fullKode = trim((string) ($item['kode_mk'] ?? ''));
+            $namaMk = trim((string) ($item['nama_mk'] ?? ''));
+            $sks = (int) ($item['sks'] ?? 3);
+            $semester = (int) ($item['semester'] ?? 1);
+            $kelas = ! empty($item['kelas']) ? strtoupper(trim((string) $item['kelas'])) : null;
+            $tipe = in_array($item['tipe'] ?? '', ['Wajib', 'Pilihan'], true) ? $item['tipe'] : 'Wajib';
+            $prodi = trim((string) ($item['prodi'] ?? $defaultProdi)) ?: $defaultProdi;
+            $kategori = $item['kategori'] ?? $this->classifyKategori($fullKode, $tipe, $namaMk, $prodi);
+            $pemilik = $item['pemilik'] ?? $this->resolvePemilik($kategori, $prodi);
+
+            if (empty($fullKode) || empty($namaMk)) {
+                continue;
+            }
+
+            $baseKode = preg_replace('/-[A-Za-z0-9]+$/', '', $fullKode);
+
+            // 1. Simpan / Sinkronkan Master MK Tunggal (hindari duplikasi master untuk MK Universitas / Fakultas)
+            $masterMk = MataKuliah::firstOrCreate(
+                ['kode' => $baseKode],
+                [
+                    'nama' => $namaMk,
+                    'sks' => $sks,
+                    'semester' => $semester,
+                    'tipe' => in_array($kategori, ['MK Universitas', 'MK Fakultas']) ? 'Fakultas' : 'Prodi',
+                    'kategori' => $kategori,
+                    'pemilik' => $pemilik,
+                    'kurikulum' => '2024',
+                    'level_id' => 1,
+                ]
+            );
+
+            // Update master jika ada data kategori / pemilik yang belum terisi
+            if (! $masterMk->kategori || ! $masterMk->pemilik) {
+                $masterMk->update([
+                    'kategori' => $kategori,
+                    'pemilik' => $pemilik,
+                ]);
+            }
+
+            // 2. Resolve Dosen Pengampu
+            $dosenKetuaId = $this->resolveDosen($item['dosen_ketua'] ?? null, $prodi);
+            $dosenAnggotaId = $this->resolveDosen($item['dosen_anggota'] ?? null, $prodi);
+
+            if ($dosenKetuaId && $dosenKetuaId === $dosenAnggotaId) {
+                $dosenAnggotaId = null;
+            }
+
+            $payload = [
+                'master_mk_id' => $masterMk->id,
+                'nama_mk' => $namaMk,
+                'sks' => $sks,
+                'semester' => $semester,
+                'kelas' => $kelas,
+                'tipe' => $tipe,
+                'kategori' => $kategori,
+                'prodi' => $prodi,
                 'dosen_ketua_id' => $dosenKetuaId,
                 'dosen_anggota_id' => $dosenAnggotaId,
-                'jumlah_kelas' => isset($data['jumlah_kelas']) && $data['jumlah_kelas'] !== '' ? max(1, min(10, (int) $data['jumlah_kelas'])) : 1,
-                'kapasitas_per_kelas' => isset($data['kapasitas_per_kelas']) && $data['kapasitas_per_kelas'] !== '' ? max(10, min(200, (int) $data['kapasitas_per_kelas'])) : 40,
-                'butuh_lab' => (bool) ($data['butuh_lab'] ?? false),
+                'jumlah_kelas' => 1,
+                'kapasitas_per_kelas' => isset($item['kapasitas_per_kelas']) ? max(10, min(200, (int) $item['kapasitas_per_kelas'])) : 40,
+                'butuh_lab' => (bool) ($item['butuh_lab'] ?? false),
+                'tanpa_ruangan' => (bool) ($item['tanpa_ruangan'] ?? false),
+                'status_verifikasi' => $item['status'] ?? 'dikenali',
+                'status_tawar' => true,
                 'is_active' => true,
             ];
 
-            $exists = MataKuliahDetail::where('kode_mk', $data['kode_mk'])->exists();
-            MataKuliahDetail::updateOrCreate(['kode_mk' => $data['kode_mk']], $payload);
+            $exists = MataKuliahDetail::where('kode_mk', $fullKode)->exists();
+            MataKuliahDetail::updateOrCreate(['kode_mk' => $fullKode], $payload);
 
+            $seen[$fullKode] = $line;
             if ($exists) {
                 $updated++;
             } else {
@@ -709,24 +899,34 @@ class MataKuliahImportService
         }
 
         // Ekstraksi angka SKS secara cerdas (misal: "3 SKS", "3 (2-1)", "3", fallback: 3)
+        $rawNama = (string) ($data['nama_mk'] ?? '');
+        $isSkripsi = (bool) preg_match('/(skripsi|tugas\s*akhir)/i', $rawNama);
+
         if (isset($data['sks']) && $data['sks'] !== null && trim((string) $data['sks']) !== '') {
             $sksDigits = preg_replace('/[^0-9]/', '', (string) $data['sks']);
             if ($sksDigits !== '') {
                 $num = (int) substr($sksDigits, 0, 1);
-                $data['sks'] = ($num >= 1 && $num <= 4) ? $num : 3;
+                $data['sks'] = ($num >= 1 && $num <= 6) ? $num : ($isSkripsi ? 6 : 3);
             } else {
-                $data['sks'] = 3;
+                $data['sks'] = $isSkripsi ? 6 : 3;
             }
         } else {
-            $data['sks'] = 3;
+            $data['sks'] = $isSkripsi ? 6 : 3;
         }
 
-        // Ekstraksi angka Semester secara cerdas
+        // Ekstraksi angka Semester secara cerdas (termasuk angka romawi VI, VIII)
+        $rawKode = (string) ($data['kode_mk'] ?? '');
+        $combinedText = $rawNama.' '.$rawKode;
+
         if (isset($data['semester']) && $data['semester'] !== null && trim((string) $data['semester']) !== '') {
             $rawSem = (string) $data['semester'];
             if (str_contains(strtolower($rawSem), 'pilihan')) {
                 $data['tipe'] = 'Pilihan';
-                $data['semester'] = 6;
+                if (preg_match('/\(viii\)/i', $combinedText) || str_contains($rawSem, '8')) {
+                    $data['semester'] = 8;
+                } else {
+                    $data['semester'] = 6;
+                }
             } else {
                 $semDigits = preg_replace('/[^0-9]/', '', $rawSem);
                 if ($semDigits !== '') {
@@ -736,6 +936,12 @@ class MataKuliahImportService
                     $data['semester'] = 1;
                 }
             }
+        } elseif (preg_match('/\(viii\)/i', $combinedText)) {
+            $data['semester'] = 8;
+            $data['tipe'] = 'Pilihan';
+        } elseif (preg_match('/\(vi\)/i', $combinedText)) {
+            $data['semester'] = 6;
+            $data['tipe'] = 'Pilihan';
         } else {
             $data['semester'] = 1;
         }
@@ -779,9 +985,12 @@ class MataKuliahImportService
 
         // Deteksi Kebutuhan Laboratorium secara cerdas dari kolom tipe/jenis atau nama mata kuliah
         $rawTipeOrJenis = (string) ($row[$headerMap['tipe'] ?? -1] ?? ($data['tipe'] ?? ''));
-        $rawNama = (string) ($data['nama_mk'] ?? '');
         $isPraktikum = (bool) (preg_match('/(praktikum|lab|laboratorium)/i', $rawTipeOrJenis) || preg_match('/praktikum/i', $rawNama));
         $data['butuh_lab'] = $isPraktikum || $this->toBool($data['butuh_lab'] ?? null);
+
+        // Deteksi Mata Kuliah Tanpa Ruangan Fisik (Skripsi, KKN, Kerja Praktik, Magang)
+        $isTanpaRuangan = (bool) preg_match('/(skripsi|tugas\s*akhir|kukerta|kkn|kerja\s*praktek|kerja\s*praktik|magang|seminar\s*proposal)/i', $rawNama);
+        $data['tanpa_ruangan'] = $isTanpaRuangan || $this->toBool($data['tanpa_ruangan'] ?? null);
 
         return $data;
     }
@@ -800,8 +1009,8 @@ class MataKuliahImportService
             $errors[] = 'nama_mk wajib diisi.';
         }
 
-        if (! is_numeric($data['sks'] ?? null) || (int) $data['sks'] < 1 || (int) $data['sks'] > 4) {
-            $errors[] = 'sks harus 1-4.';
+        if (! is_numeric($data['sks'] ?? null) || (int) $data['sks'] < 1 || (int) $data['sks'] > 6) {
+            $errors[] = 'sks harus 1-6.';
         }
 
         if (! in_array((int) ($data['semester'] ?? 0), range(1, 8), true)) {
