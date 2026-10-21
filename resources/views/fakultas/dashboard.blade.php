@@ -221,20 +221,44 @@
                             <thead>
                                 <tr>
                                     <th>Jam</th>
+                                    <th>Kode MK</th>
                                     <th>Mata Kuliah</th>
+                                    <th style="text-align:center;">SKS</th>
+                                    <th style="text-align:center;">Kelas</th>
                                     <th>Dosen</th>
                                     <th>Ruangan</th>
-                                    <th>Rombel</th>
+                                    <th>Prodi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($jadwals[$hari] as $j)
                                     <tr>
-                                        <td style="white-space:nowrap;">{{ substr($j->jam_mulai, 0, 5) }} – {{ substr($j->jam_selesai, 0, 5) }}</td>
-                                        <td>{{ $j->rombel->mataKuliah->nama_mk ?? '-' }}</td>
-                                        <td>{{ $j->dosen->nama ?? '-' }}</td>
-                                        <td>{{ $j->ruangan->kode ?? '-' }}</td>
-                                        <td>{{ $j->rombel->kode_rombel ?? '-' }} @if($j->rombel->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $j->rombel->kelas }}</span>@endif</td>
+                                        <td style="white-space:nowrap; font-weight:600; color:#0860be;">{{ substr($j->jam_mulai, 0, 5) }} – {{ substr($j->jam_selesai, 0, 5) }}</td>
+                                        <td style="white-space:nowrap;"><strong>{{ $j->clean_kode_mk }}</strong></td>
+                                        <td style="font-weight:600; color:#0f172a;">{{ $j->rombel->mataKuliah->nama_mk ?? '-' }}</td>
+                                        <td style="text-align:center;"><span style="display:inline-block; padding:2px 8px; background:#e2e8f0; border-radius:12px; font-size:0.85rem; font-weight:600;">{{ $j->rombel->mataKuliah->sks ?? '-' }}</span></td>
+                                        <td style="text-align:center;">
+                                            <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                                                {{ $j->kelas_label }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span title="{{ $j->dosen->nama ?? '-' }}" style="font-weight:700; color:#1e3a5f; cursor:help; background:#f8fafc; padding:3px 8px; border-radius:6px; font-size:0.85rem; display:inline-block; border:1px solid #cbd5e1;">
+                                                {{ $j->dosen_inisial }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if($j->ruangan?->kode)
+                                                <span style="display:inline-block; padding:3px 8px; background:#ecfdf5; color:#047857; font-weight:600; border-radius:6px; font-size:0.85rem;">{{ $j->ruangan->kode }}</span>
+                                            @else
+                                                <span style="color:#94a3b8; font-style:italic;">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span style="font-size:0.75rem; padding:2px 8px; border-radius:10px; font-weight:600; white-space:nowrap; {{ str_contains(strtolower($j->rombel->mataKuliah->prodi ?? ''), 'informatika') ? 'background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;' }}">
+                                                {{ $j->rombel->mataKuliah->prodi ?? '-' }}
+                                            </span>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -246,17 +270,19 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Hari</th>
                                     <th>Jam</th>
+                                    <th>Kode MK</th>
                                     <th>Mata Kuliah</th>
+                                    <th style="text-align:center;">SKS</th>
+                                    <th style="text-align:center;">Kelas</th>
                                     <th>Dosen</th>
                                     <th>Ruangan</th>
-                                    <th>Rombel</th>
+                                    <th>Prodi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="6" style="text-align:center; padding:24px; color:#666;">Belum ada jadwal aktif.</td>
+                                    <td colspan="8" style="text-align:center; padding:24px; color:#666;">Belum ada jadwal aktif.</td>
                                 </tr>
                             </tbody>
                         </table>

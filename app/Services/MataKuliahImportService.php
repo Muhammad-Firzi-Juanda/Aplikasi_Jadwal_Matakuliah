@@ -1070,6 +1070,7 @@ class MataKuliahImportService
 
         $created = Dosen::create([
             'nama' => $value,
+            'inisial' => Dosen::generateInisialFromName($value),
             'jabatan' => 'Ketua & Anggota',
             'prodi' => $prodi,
             'is_active' => true,

@@ -70,4 +70,28 @@ class Jadwal extends Model
 
         return false;
     }
+
+    /**
+     * Kode mata kuliah murni tanpa imbuhan kelas.
+     */
+    public function getCleanKodeMkAttribute(): string
+    {
+        return $this->rombel?->clean_kode_mk ?? '';
+    }
+
+    /**
+     * Label kelas saja (A, B, C, D, ULANG) sesuai data.
+     */
+    public function getKelasLabelAttribute(): string
+    {
+        return $this->rombel?->kelas_label ?? 'A';
+    }
+
+    /**
+     * Kode inisial dosen (e.g. PA, SM, MM) sesuai format Excel.
+     */
+    public function getDosenInisialAttribute(): string
+    {
+        return $this->dosen?->inisial ?? '-';
+    }
 }

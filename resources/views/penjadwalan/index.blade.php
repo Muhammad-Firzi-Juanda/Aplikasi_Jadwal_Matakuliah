@@ -215,6 +215,554 @@
         width: 100%;
     }
 }
+
+/* ==========================================================================
+   Log & Diagnosa Generate Terakhir - Modern UI
+   ========================================================================== */
+.log-generate-box {
+    margin-top: 24px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.log-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-bottom: 1px solid transparent;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.log-generate-box.expanded .log-summary-header {
+    border-bottom-color: #e2e8f0;
+}
+
+.log-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.log-summary-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.log-summary-icon-wrap.all-success {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.log-summary-icon-wrap.has-failures {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.log-summary-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.log-summary-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.log-summary-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.log-summary-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.log-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.pill-success {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.pill-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.pill-warning {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.btn-toggle-log {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    background: #ffffff;
+    color: #0860be;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(8, 96, 190, 0.08);
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-log:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+}
+
+.btn-toggle-log.active {
+    background: #0860be;
+    color: #ffffff;
+    border-color: #0860be;
+}
+
+.chevron-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.btn-toggle-log.active .chevron-icon {
+    transform: rotate(180deg);
+}
+
+/* Collapsible Details Container */
+.log-details-container {
+    padding: 20px;
+    background: #ffffff;
+}
+
+.log-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 20px;
+}
+
+.log-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.log-filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.log-filter-btn {
+    padding: 6px 14px;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.log-filter-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.log-filter-btn.active {
+    background: #0860be;
+    color: #ffffff;
+    border-color: #0860be;
+}
+
+.log-filter-btn.filter-btn-danger.active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}
+
+.log-filter-btn.filter-btn-success.active {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+}
+
+.log-filter-btn.filter-btn-warning.active {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+.log-semester-select {
+    padding: 6px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: #ffffff;
+    cursor: pointer;
+    outline: none;
+}
+
+.log-semester-block {
+    margin-bottom: 24px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    background: #fafbfc;
+}
+
+.log-semester-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.log-semester-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.log-sem-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge-count-success {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-count-danger {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-count-info {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Warnings */
+.log-warning-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 0.88rem;
+    color: #92400e;
+    line-height: 1.5;
+}
+
+/* Failures / Diagnosa Cards */
+.log-failures-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #b91c1c;
+    margin-bottom: 12px;
+}
+
+.log-failures-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.log-failure-card {
+    background: #ffffff;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.06);
+}
+
+.failure-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.failure-mk-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.failure-mk-code {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.failure-mk-name {
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.failure-mk-sks {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.failure-prodi-badge {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.failure-cause-box {
+    background: #fef2f2;
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin-bottom: 8px;
+}
+
+.failure-solution-box {
+    background: #f0fdf4;
+    border-radius: 6px;
+    padding: 9px 12px;
+}
+
+.failure-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.failure-label.red-label {
+    color: #b91c1c;
+}
+
+.failure-label.green-label {
+    color: #15803d;
+}
+
+.failure-text {
+    font-size: 0.87rem;
+    line-height: 1.45;
+}
+
+.failure-text.red-text {
+    color: #991b1b;
+}
+
+.failure-text.green-text {
+    color: #166534;
+}
+
+/* Success Table */
+.log-success-table-wrap {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 14px;
+}
+
+.log-success-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: left;
+}
+
+.log-success-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-bottom: 1.5px solid #e2e8f0;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.log-success-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+.log-success-table tr:last-child td {
+    border-bottom: none;
+}
+
+.badge-status-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #dcfce7;
+    color: #166534;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.col-mk-title {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.row-warning-text {
+    font-size: 0.78rem;
+    color: #d97706;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.badge-class-pill {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-slot-time {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* Raw Monospace Details */
+.log-raw-accordion {
+    margin-top: 10px;
+}
+
+.log-raw-accordion details summary {
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.log-raw-accordion details summary:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.log-raw-content {
+    margin-top: 8px;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.log-raw-content pre {
+    margin: 0;
+    color: #e2e8f0;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
 </style>
 @endpush
 
@@ -226,6 +774,8 @@
                 <h2>APJAD</h2>
                 @if(Auth::user()->role === 'Fakultas')
                     <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Fakultas</span>
+                @elseif(Auth::user()->role === 'Prodi')
+                    <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Admin Prodi</span>
                 @else
                     <span class="sidebar-role-badge" style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">Super Admin</span>
                 @endif
@@ -292,6 +842,50 @@
                             <path d="M3 9h18M9 3v18"></path>
                         </svg>
                         <span>Data Mata Kuliah</span>
+                    </a>
+                    <a href="{{ route('penjadwalan.index') }}" class="sidebar-link active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>Penjadwalan</span>
+                    </a>
+                @elseif(Auth::user()->role === 'Prodi')
+                    <a href="{{ route('prodi.dashboard') }}" class="sidebar-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ route('prodi.dashboard') }}#section-dosen" class="sidebar-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>Data Dosen</span>
+                    </a>
+                    <a href="{{ route('prodi.dashboard') }}#section-mk" class="sidebar-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5h16M6.5 15.5l5-3 5 3m-10 0l5-3 5 3M12 12l-9-5h18l-9 5"></path>
+                        </svg>
+                        <span>Mata Kuliah</span>
+                    </a>
+                    <a href="{{ route('prodi.dashboard') }}#section-rombel" class="sidebar-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                            <path d="M3 9h18M9 3v18"></path>
+                        </svg>
+                        <span>Rombel</span>
+                    </a>
+                    <a href="{{ route('prodi.dashboard') }}#section-jadwal" class="sidebar-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>Jadwal Kuliah</span>
                     </a>
                     <a href="{{ route('penjadwalan.index') }}" class="sidebar-link active">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -379,12 +973,7 @@
                     <div class="tab-header">
                         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                             <h2>Data Mata Kuliah</h2>
-                            @if (($userRole ?? '') === 'Jurusan')
-                                <span style="background:#e0f2fe; color:#0369a1; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                                    Mode Monitoring Jurusan
-                                </span>
-                            @elseif (($userRole ?? '') === 'Prodi')
+                            @if (($userRole ?? '') === 'Prodi')
                                 <span style="background:#f0fdf4; color:#15803d; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                                     Prodi: {{ $userProdi ?? 'Teknik Informatika' }}
@@ -392,33 +981,31 @@
                             @endif
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            @if (($userRole ?? '') !== 'Jurusan')
-                                <button type="button" class="btn-add" onclick="openModal('modalImportMk')" style="background:#16a34a;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                            <button type="button" class="btn-add" onclick="openModal('modalImportMk')" style="background:#16a34a;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Import Excel / Spreadsheet
+                            </button>
+                            <button type="button" class="btn-add" onclick="openTambahMk()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Tambah MK
+                            </button>
+                            @if ($mataKuliah->isNotEmpty())
+                                <button type="button" class="btn-add" onclick="openModalHapusSemua('all')" style="background:#dc2626;" title="Hapus semua data mata kuliah dan jadwal">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
                                     </svg>
-                                    Import Excel / Spreadsheet
+                                    Hapus Semua Data
                                 </button>
-                                <button type="button" class="btn-add" onclick="openTambahMk()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                    Tambah MK
-                                </button>
-                                @if ($mataKuliah->isNotEmpty())
-                                    <button type="button" class="btn-add" onclick="openModalHapusSemua('all')" style="background:#dc2626;" title="Hapus semua data mata kuliah dan jadwal">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                        Hapus Semua Data
-                                    </button>
-                                @endif
                             @endif
                         </div>
                     </div>
@@ -446,7 +1033,7 @@
                                 <th>Tipe</th>
                                 <th>Dosen Ketua</th>
                                 <th>Dosen Anggota</th>
-                                <th>Jumlah Kelas</th>
+                                <th style="text-align:center;">Kelas</th>
                                 <th style="text-align:center;">Aksi</th>
                             </tr>
                         </thead>
@@ -454,18 +1041,20 @@
                             @forelse ($mataKuliah as $sem => $listMk)
                                 @foreach ($listMk as $mk)
                                     <tr>
-                                        <td><strong>{{ $mk->kode_mk }}</strong></td>
+                                        <td><strong>{{ $mk->clean_kode_mk }}</strong></td>
                                         <td>{{ $mk->nama_mk }}</td>
                                         <td>{{ $mk->sks }}</td>
                                         <td>{{ $mk->semester }}</td>
                                         <td>{{ $mk->tipe }}</td>
                                         <td>{{ $mk->dosenKetua->nama ?? '-' }}</td>
                                         <td>{{ $mk->dosenAnggota->nama ?? '-' }}</td>
-                                        <td>{{ $mk->jumlah_kelas }}</td>
                                         <td style="text-align:center;">
-                                            @if (($userRole ?? '') === 'Jurusan')
-                                                <span style="font-size:12px; color:#64748b; font-style:italic;">Hanya Lihat</span>
-                                            @elseif (($userRole ?? '') === 'Prodi' && ! empty($userProdi) && stripos($mk->prodi, $userProdi) === false)
+                                            <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                                                {{ $mk->kelas_label }}
+                                            </span>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            @if (($userRole ?? '') === 'Prodi' && ! empty($userProdi) && stripos($mk->prodi, $userProdi) === false)
                                                 <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px;" title="Mata Kuliah Fakultas/Universitas">MK Bersama</span>
                                             @else
                                                 <div class="action-buttons-group" style="justify-content:center;">
@@ -510,23 +1099,15 @@
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-8h8v8"/></svg>
                                 Total: {{ $ruangans->count() }} Ruangan ({{ $ruanganAktif->count() }} Aktif)
                             </span>
-                            @if (($userRole ?? '') === 'Jurusan')
-                                <span style="background:#e0f2fe; color:#0369a1; padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                                    Mode Monitoring Jurusan
-                                </span>
-                            @endif
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            @if (($userRole ?? '') !== 'Jurusan')
-                                <button type="button" class="btn-add" onclick="openTambahRuangan()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                    Tambah Ruangan
-                                </button>
-                            @endif
+                            <button type="button" class="btn-add" onclick="openTambahRuangan()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Tambah Ruangan
+                            </button>
                         </div>
                     </div>
 
@@ -557,6 +1138,8 @@
                                             <span style="display: inline-block; padding: 3px 10px; background: #dcfce7; color: #15803d; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Lab</span>
                                         @elseif ($r->tipe === 'Ruang Kelas')
                                             <span style="display: inline-block; padding: 3px 10px; background: #eff6ff; color: #1d4ed8; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Ruang Kelas</span>
+                                        @elseif ($r->tipe === 'Auditorium' || $r->tipe === 'Aula')
+                                            <span style="display: inline-block; padding: 3px 10px; background: #f3e8ff; color: #7e22ce; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Auditorium</span>
                                         @else
                                             <span style="display: inline-block; padding: 3px 10px; background: #fef3c7; color: #92400e; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">{{ $r->tipe }}</span>
                                         @endif
@@ -564,40 +1147,23 @@
                                     <td>{{ $r->kapasitas }} Kursi</td>
                                     <td>{{ $r->gedung ?? '-' }} / Lt. {{ $r->lantai ?? '-' }}</td>
                                     <td style="text-align:center;">
-                                        @if (($userRole ?? '') === 'Jurusan')
+                                        <form action="{{ route('ruangan.toggle-status', $r->id) }}" method="POST" style="display:inline;">
+                                            @csrf
                                             @if ($r->is_active)
-                                                <span style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                                                <button type="submit" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk menonaktifkan ruangan">
                                                     <span style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
                                                     Aktif
-                                                </span>
+                                                </button>
                                             @else
-                                                <span style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+                                                <button type="submit" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk mengaktifkan ruangan">
                                                     <span style="width:7px; height:7px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
                                                     Nonaktif
-                                                </span>
+                                                </button>
                                             @endif
-                                        @else
-                                            <form action="{{ route('ruangan.toggle-status', $r->id) }}" method="POST" style="display:inline;">
-                                                @csrf
-                                                @if ($r->is_active)
-                                                    <button type="submit" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk menonaktifkan ruangan">
-                                                        <span style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
-                                                        Aktif
-                                                    </button>
-                                                @else
-                                                    <button type="submit" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;" title="Klik untuk mengaktifkan ruangan">
-                                                        <span style="width:7px; height:7px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
-                                                        Nonaktif
-                                                    </button>
-                                                @endif
-                                            </form>
-                                        @endif
+                                        </form>
                                     </td>
                                     <td style="text-align:center;">
-                                        @if (($userRole ?? '') === 'Jurusan')
-                                            <span style="font-size:12px; color:#64748b; font-style:italic;">Hanya Lihat</span>
-                                        @else
-                                            <div class="action-buttons-group" style="justify-content:center;">
+                                        <div class="action-buttons-group" style="justify-content:center;">
                                                 <button type="button" class="btn-action edit-btn" title="Edit Ruangan"
                                                     onclick='openEditRuangan(@json($r))'>
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -626,7 +1192,6 @@
                                                     </form>
                                                 @endif
                                             </div>
-                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -719,14 +1284,7 @@
                         </div>
 
                         <div class="generate-form-actions">
-                            @if (($userRole ?? '') === 'Jurusan')
-                                <div style="background:#f1f5f9; color:#475569; padding:10px 18px; border-radius:8px; font-size:13.5px; display:inline-flex; align-items:center; gap:8px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                                    <span><strong>Mode Monitoring:</strong> Akun Jurusan hanya berwenang untuk memantau & evaluasi jadwal (generate jadwal dilakukan oleh Prodi / Fakultas).</span>
-                                </div>
-                            @else
-                                <button type="submit" class="btn-generate-submit btn-modal-submit" id="btnSubmitGenerate">Generate Sekarang</button>
-                            @endif
+                            <button type="submit" class="btn-generate-submit btn-modal-submit" id="btnSubmitGenerate">Generate Sekarang</button>
                         </div>
                     </form>
 
@@ -748,72 +1306,349 @@
                     </div>
 
                     @if (! empty($logGenerate))
-                        <div class="tab-header" style="margin-top:24px;">
-                            <h2>Log Generate Terakhir</h2>
-                        </div>
-                        @foreach ($logGenerate as $hasil)
-                            <div style="margin-bottom:18px;">
-                                @if (! empty($hasil['kegagalan']))
-                                    <div style="background:#fef2f2; border:1px solid #f87171; border-radius:8px; padding:12px 16px; margin-bottom:14px;">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                                            <div style="display:flex; align-items:center; gap:8px;">
-                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b91c1c" stroke-width="2">
-                                                    <circle cx="12" cy="12" r="10"></circle>
-                                                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                                </svg>
-                                                <span style="color:#b91c1c; font-size:13.5px; font-weight:700;">
-                                                    Diagnosa Penjadwalan: {{ count($hasil['kegagalan']) }} Mata Kuliah Memerlukan Penyesuaian
-                                                </span>
-                                            </div>
-                                            <button type="button" 
-                                                onclick="const el = document.getElementById('diagnosaList-{{ $hasil['semester'] }}'); const isHidden = el.style.display === 'none'; el.style.display = isHidden ? 'flex' : 'none'; this.innerHTML = isHidden ? 'Sembunyikan Detail &times;' : 'Lihat Detail &darr;';" 
-                                                style="background:#ffffff; color:#b91c1c; border:1px solid #fca5a5; border-radius:6px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;">
-                                                Lihat Detail &darr;
-                                            </button>
+                        @php
+                            $totalBerhasil = 0;
+                            $allFailuresCount = 0;
+                            $totalPeringatan = 0;
+                            $semestersInLog = [];
+
+                            foreach ($logGenerate as $h) {
+                                $totalBerhasil += ($h['jumlah'] ?? 0);
+                                $totalPeringatan += count($h['peringatan'] ?? []);
+                                $semestersInLog[] = $h['semester'];
+                                
+                                $semFailures = $h['kegagalan'] ?? [];
+                                $existingCodes = array_column($semFailures, 'kode_mk');
+                                foreach ($h['log'] as $b) {
+                                    $tb = trim($b);
+                                    if (str_starts_with($tb, 'GAGAL')) {
+                                        $clean = preg_replace('/^GAGAL\s+/', '', $tb);
+                                        $codeFound = false;
+                                        foreach ($existingCodes as $c) {
+                                            if ($c && str_contains($clean, $c)) {
+                                                $codeFound = true;
+                                                break;
+                                            }
+                                        }
+                                        if (! $codeFound) {
+                                            $semFailures[] = true;
+                                        }
+                                    }
+                                }
+                                $allFailuresCount += count($semFailures);
+                            }
+                            $semestersList = array_values(array_unique($semestersInLog));
+                        @endphp
+
+                        <div class="log-generate-box" id="logGenerateBox">
+                            {{-- SUMMARY TRIGGER HEADER --}}
+                            <div class="log-summary-header">
+                                <div class="log-summary-left">
+                                    <div class="log-summary-icon-wrap {{ $allFailuresCount > 0 ? 'has-failures' : 'all-success' }}">
+                                        @if ($allFailuresCount > 0)
+                                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        @else
+                                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <div class="log-summary-title-row">
+                                            <h3 class="log-summary-title">Log & Hasil Generate Terakhir</h3>
+                                            <span class="log-summary-subtitle">Semester {{ implode(', ', $semestersList) }}</span>
                                         </div>
-                                        <div id="diagnosaList-{{ $hasil['semester'] }}" style="display:none; flex-direction:column; gap:10px; margin-top:12px; border-top:1px dashed #fca5a5; padding-top:12px;">
-                                            @foreach ($hasil['kegagalan'] as $keg)
-                                                <div style="background:#ffffff; border:1px solid #fecaca; border-radius:6px; padding:12px; font-size:13px;">
-                                                    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:4px;">
-                                                        <span style="color:#1e293b; font-size:13px;">{{ $keg['kode_mk'] }} - {{ $keg['nama_mk'] }} ({{ $keg['sks'] }} SKS)</span>
-                                                        <span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-size:11.5px;">{{ $keg['prodi'] }}</span>
-                                                    </div>
-                                                    <div style="color:#b91c1c; margin-top:4px;">
-                                                        <strong>Penyebab:</strong> {{ $keg['alasan'] }}
-                                                    </div>
-                                                    <div style="color:#15803d; margin-top:3px;">
-                                                        <strong>Rekomendasi Solusi:</strong> {{ $keg['rekomendasi'] }}
-                                                    </div>
-                                                </div>
-                                            @endforeach
+                                        <div class="log-summary-pills">
+                                            <span class="log-pill pill-success">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                {{ $totalBerhasil }} Berhasil Terjadwal
+                                            </span>
+                                            @if ($allFailuresCount > 0)
+                                                <span class="log-pill pill-danger">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                                    {{ $allFailuresCount }} Butuh Penyesuaian
+                                                </span>
+                                            @endif
+                                            @if ($totalPeringatan > 0)
+                                                <span class="log-pill pill-warning">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                                    {{ $totalPeringatan }} Catatan Sistem
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
-                                @endif
+                                </div>
 
-                                <p style="font-weight:600; margin-bottom:6px;">
-                                    Semester {{ $hasil['semester'] }} &rarr; {{ $hasil['jumlah'] }} jadwal
-                                    @if (! empty($hasil['slot_pilihan']))
-                                        <span style="font-weight:400; color:#555;">
-                                            (Kuota MK Pilihan: {{ $hasil['kuota_pilihan'] }} &mdash;
-                                            {{ implode(' | ', $hasil['slot_pilihan']) }})
-                                        </span>
-                                    @endif
-                                </p>
-                                <table class="data-table">
-                                    <tbody>
-                                        @foreach ($hasil['log'] as $baris)
-                                            <tr>
-                                                <td style="font-family:monospace; font-size:12px;">{{ $baris }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                @foreach ($hasil['peringatan'] as $p)
-                                    <p style="color:#b26a00; font-size:13px; margin-top:6px;">Peringatan: {{ $p }}</p>
-                                @endforeach
+                                <div class="log-summary-right" style="display:flex; align-items:center; gap:8px;">
+                                    <form action="{{ route('penjadwalan.clear-log') }}" method="POST" style="margin:0;" onsubmit="return confirm('Apakah Anda yakin ingin membersihkan log generate ini?');">
+                                        @csrf
+                                        <button type="submit" 
+                                            style="display:inline-flex; align-items:center; gap:6px; padding:9px 12px; background:#ffffff; color:#dc2626; border:1px solid #fecaca; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s;"
+                                            title="Bersihkan riwayat log generate ini"
+                                            onmouseover="this.style.background='#fef2f2';"
+                                            onmouseout="this.style.background='#ffffff';">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                            <span>Bersihkan</span>
+                                        </button>
+                                    </form>
+
+                                    <button type="button" id="btnToggleLogGenerate" onclick="toggleLogGenerate()" class="btn-toggle-log">
+                                        <svg id="iconToggleLogState" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <span id="textToggleLog">Buka Log & Diagnosa</span>
+                                        <span id="chevronToggleLog" class="chevron-icon">&#9662;</span>
+                                    </button>
+                                </div>
                             </div>
-                        @endforeach
+
+                            {{-- COLLAPSIBLE DETAILS CONTAINER (HIDDEN BY DEFAULT) --}}
+                            <div id="containerLogGenerate" class="log-details-container" style="display: none;">
+                                {{-- FILTER TOOLBAR --}}
+                                <div class="log-toolbar">
+                                    <div class="log-filter-group">
+                                        <span class="log-filter-label">Filter Status:</span>
+                                        <button type="button" class="log-filter-btn active" data-filter="all" onclick="applyLogFilter('all', this)">
+                                            Semua
+                                        </button>
+                                        @if ($allFailuresCount > 0)
+                                            <button type="button" class="log-filter-btn filter-btn-danger" data-filter="gagal" onclick="applyLogFilter('gagal', this)">
+                                                🔴 Butuh Penyesuaian ({{ $allFailuresCount }})
+                                            </button>
+                                        @endif
+                                        <button type="button" class="log-filter-btn filter-btn-success" data-filter="sukses" onclick="applyLogFilter('sukses', this)">
+                                            🟢 Berhasil ({{ $totalBerhasil }})
+                                        </button>
+                                        @if ($totalPeringatan > 0)
+                                            <button type="button" class="log-filter-btn filter-btn-warning" data-filter="warning" onclick="applyLogFilter('warning', this)">
+                                                🟡 Catatan ({{ $totalPeringatan }})
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    @if (count($semestersList) > 1)
+                                        <div class="log-filter-group">
+                                            <span class="log-filter-label">Semester:</span>
+                                            <select id="selectSemesterLogFilter" onchange="filterLogBySemester(this.value)" class="log-semester-select">
+                                                <option value="all">Semua Semester</option>
+                                                @foreach ($semestersList as $s)
+                                                    <option value="{{ $s }}">Semester {{ $s }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- LOOP PER SEMESTER --}}
+                                <div class="log-semester-items-wrap">
+                                    @foreach ($logGenerate as $hasil)
+                                        @php
+                                            $failures = $hasil['kegagalan'] ?? [];
+                                            $existingFailedCodes = array_column($failures, 'kode_mk');
+                                            foreach ($hasil['log'] as $baris) {
+                                                $trimmed = trim($baris);
+                                                if (str_starts_with($trimmed, 'GAGAL')) {
+                                                    $cleanLine = preg_replace('/^GAGAL\s+/', '', $trimmed);
+                                                    $parts = explode('|', $cleanLine);
+                                                    $mkInfo = trim($parts[0] ?? '');
+                                                    $codeFound = false;
+                                                    foreach ($existingFailedCodes as $efc) {
+                                                        if ($efc && str_contains($mkInfo, $efc)) {
+                                                            $codeFound = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (! $codeFound) {
+                                                        $splitDash = explode(' - ', $mkInfo, 2);
+                                                        $failures[] = [
+                                                            'kode_mk' => trim($splitDash[0] ?? 'MK'),
+                                                            'nama_mk' => trim($splitDash[1] ?? $mkInfo),
+                                                            'sks' => '-',
+                                                            'semester' => $hasil['semester'],
+                                                            'prodi' => 'Umum',
+                                                            'tipe' => 'Wajib',
+                                                            'alasan' => 'Tidak ada slot waktu kosong yang memenuhi syarat (ruangan/dosen/cohort) untuk kelas ini.',
+                                                            'rekomendasi' => 'Aktifkan ruangan tambahan di menu Data Ruangan atau periksa ketersediaan jam dosen pengampu.',
+                                                        ];
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+
+                                        <div class="log-semester-block" data-semester="{{ $hasil['semester'] }}">
+                                            <div class="log-semester-header">
+                                                <h4>Semester {{ $hasil['semester'] }}</h4>
+                                                <div class="log-sem-badges">
+                                                    <span class="badge-count-success">{{ $hasil['jumlah'] }} jadwal berhasil</span>
+                                                    @if (! empty($failures))
+                                                        <span class="badge-count-danger">{{ count($failures) }} perlu penyesuaian</span>
+                                                    @endif
+                                                    @if (! empty($hasil['slot_pilihan']))
+                                                        <span class="badge-count-info">Kuota MK Pilihan: {{ $hasil['kuota_pilihan'] }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            {{-- PERINGATAN SISTEM (WARNINGS) --}}
+                                            @if (! empty($hasil['peringatan']))
+                                                <div class="log-section-warnings log-item-warning">
+                                                    @foreach ($hasil['peringatan'] as $p)
+                                                        <div class="log-warning-card">
+                                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0; margin-top:2px;">
+                                                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                                            </svg>
+                                                            <div>
+                                                                <strong>Catatan Sistem:</strong> {{ $p }}
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
+                                            {{-- DIAGNOSA KEGAGALAN / BUTUH PENYESUAIAN --}}
+                                            @if (! empty($failures))
+                                                <div class="log-section-failures log-item-gagal">
+                                                    <div class="log-failures-title">
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2">
+                                                            <circle cx="12" cy="12" r="10"></circle>
+                                                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                                                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                                        </svg>
+                                                        <span>Mata Kuliah Yang Memerlukan Penyesuaian ({{ count($failures) }})</span>
+                                                    </div>
+                                                    <div class="log-failures-grid">
+                                                        @foreach ($failures as $keg)
+                                                            <div class="log-failure-card">
+                                                                <div class="failure-card-top">
+                                                                    <div class="failure-mk-info">
+                                                                        <span class="failure-mk-code">{{ $keg['kode_mk'] }}</span>
+                                                                        <span class="failure-mk-name">{{ $keg['nama_mk'] }}</span>
+                                                                        @if (!empty($keg['sks']) && $keg['sks'] !== '-')
+                                                                            <span class="failure-mk-sks">{{ $keg['sks'] }} SKS</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    <span class="failure-prodi-badge">{{ $keg['prodi'] ?? 'Umum' }}</span>
+                                                                </div>
+                                                                <div class="failure-cause-box">
+                                                                    <div class="failure-label red-label">
+                                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                                                                        Penyebab:
+                                                                    </div>
+                                                                    <div class="failure-text red-text">{{ $keg['alasan'] }}</div>
+                                                                </div>
+                                                                <div class="failure-solution-box">
+                                                                    <div class="failure-label green-label">
+                                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                                                                        Rekomendasi Solusi:
+                                                                    </div>
+                                                                    <div class="failure-text green-text">{{ $keg['rekomendasi'] }}</div>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            {{-- JADWAL BERHASIL TERJADWAL --}}
+                                            @php
+                                                $logSuccessItems = [];
+                                                foreach ($hasil['log'] as $baris) {
+                                                    if (str_starts_with(trim($baris), 'OK')) {
+                                                        $logSuccessItems[] = $baris;
+                                                    }
+                                                }
+                                            @endphp
+
+                                            @if (! empty($logSuccessItems))
+                                                <div class="log-section-success log-item-sukses">
+                                                    <div class="log-success-table-wrap">
+                                                        <table class="log-success-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="width: 100px;">Status</th>
+                                                                    <th>Kode & Nama Mata Kuliah</th>
+                                                                    <th style="width: 120px;">Kelas</th>
+                                                                    <th style="width: 240px;">Hari & Jam Kuliah</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($logSuccessItems as $baris)
+                                                                    @php
+                                                                        $parts = explode('|', $baris);
+                                                                        $part0 = trim(preg_replace('/^OK\s+/', '', $parts[0] ?? ''));
+                                                                        $part1 = trim($parts[1] ?? '1/1 kelas');
+                                                                        $part2 = trim($parts[2] ?? '-');
+                                                                        $part3 = isset($parts[3]) ? trim($parts[3]) : null;
+
+                                                                        $extractedKode = $part0;
+                                                                        $extractedNama = '';
+                                                                        $extractedClass = null;
+                                                                        if (str_contains($part0, ' - ')) {
+                                                                            $p = explode(' - ', $part0, 2);
+                                                                            $extractedKode = trim($p[0]);
+                                                                            $extractedNama = trim($p[1]);
+                                                                        }
+                                                                        if (preg_match('/-([A-Za-z0-9]+)$/', $extractedKode, $mCls)) {
+                                                                            $extractedClass = strtoupper($mCls[1]);
+                                                                            $extractedKode = preg_replace('/-[A-Za-z0-9]+$/', '', $extractedKode);
+                                                                        }
+                                                                        if (! $extractedClass) {
+                                                                            $extractedClass = 'A';
+                                                                        }
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td>
+                                                                            <span class="badge-status-ok">
+                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                                                OK
+                                                                            </span>
+                                                                        </td>
+                                                                        <td class="col-mk-title">
+                                                                            <strong>{{ $extractedKode }}</strong>@if($extractedNama) - {{ $extractedNama }}@endif
+                                                                            @if ($part3)
+                                                                                <div class="row-warning-text">{{ $part3 }}</div>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td style="text-align: center;">
+                                                                            <span class="badge-class-pill" style="font-weight: 700; background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;">Kelas {{ $extractedClass }}</span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge-slot-time">{{ $part2 }}</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            {{-- COLLAPSIBLE RAW LOG (UNTUK DEBUG / SALIN TEKS) --}}
+                                            <div class="log-raw-accordion">
+                                                <details>
+                                                    <summary>
+                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                                                        Lihat Teks Mentah (Raw Monospace Output)
+                                                    </summary>
+                                                    <div class="log-raw-content">
+                                                        <pre>@foreach ($hasil['log'] as $baris){{ $baris }}
+@endforeach</pre>
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
                     @endif
                 </div>
 
@@ -826,6 +1661,21 @@
                         </div>
 
                         <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                            @if (! empty($logGenerate))
+                                <button type="button" 
+                                    onclick="showTab('tab-input'); if(document.getElementById('containerLogGenerate') && document.getElementById('containerLogGenerate').style.display === 'none'){ toggleLogGenerate(); } const el = document.getElementById('logGenerateBox'); if(el) el.scrollIntoView({behavior:'smooth'});"
+                                    style="background:#eff6ff; color:#0860be; border:1.5px solid #bfdbfe; border-radius:18px; padding:7px 16px; font-size:0.88rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;"
+                                    title="Buka Log & Diagnosa Hasil Generate Terakhir">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    <span>Log Hasil Generate</span>
+                                </button>
+                            @endif
+
                             {{-- Filter Dropdown --}}
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <label for="filterSemesterSelect" style="font-size:0.9rem; font-weight:600; color:#1e293b; white-space:nowrap;">Semester:</label>
@@ -865,7 +1715,7 @@
                                 </button>
                             </div>
 
-                            @if (($userRole ?? '') !== 'Jurusan' && $jadwal->isNotEmpty())
+                            @if ($jadwal->isNotEmpty())
                                 <button type="button" class="btn-add" onclick="openModalHapusSemua('jadwal_only')" 
                                     style="background:#dc2626; padding:7px 16px; font-size:0.875rem;" title="Hapus semua jadwal kuliah yang telah di-generate">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;">
@@ -1174,7 +2024,7 @@
                         <select id="ruanganTipe" name="tipe" required>
                             <option value="Ruang Kelas">Ruang Kelas</option>
                             <option value="Lab">Laboratorium (Lab)</option>
-                            <option value="Aula">Aula</option>
+                            <option value="Aula">Auditorium / Aula</option>
                             <option value="Lainnya">Lainnya</option>
                         </select>
                     </div>
@@ -1183,7 +2033,7 @@
                 <div class="modal-form-row">
                     <label for="ruanganKapasitas">Kapasitas (Kursi)</label>
                     <div class="modal-input-container">
-                        <input type="number" id="ruanganKapasitas" name="kapasitas" min="1" max="500" value="40" required>
+                        <input type="number" id="ruanganKapasitas" name="kapasitas" min="1" max="500" value="50" required>
                     </div>
                 </div>
 
@@ -1686,12 +2536,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                     ? '<span style="background:#fed7aa; color:#9a3412; padding:2px 6px; border-radius:4px; font-size:11px;">Verifikasi</span>'
                                     : '<span style="background:#bbf7d0; color:#166534; padding:2px 6px; border-radius:4px; font-size:11px;">OK</span>');
 
+                            const rawKode = item.kode_mk || '-';
+                            const cleanKode = rawKode.replace(/-[A-Za-z0-9]+$/, '');
+                            const matchCls = rawKode.match(/-([A-Za-z0-9]+)$/);
+                            const itemKelas = item.kelas || (matchCls ? matchCls[1].toUpperCase() : 'A');
+
                             tr.innerHTML = `
-                                <td style="padding:6px 8px; font-weight:600;">${item.kode_mk || '-'}</td>
+                                <td style="padding:6px 8px; font-weight:600;">${cleanKode}</td>
                                 <td style="padding:6px 8px;">${item.nama_mk || '-'}</td>
                                 <td style="padding:6px 8px; text-align:center;">${item.sks || 0}</td>
                                 <td style="padding:6px 8px; text-align:center;">${item.semester || 1}</td>
-                                <td style="padding:6px 8px; text-align:center;">${item.kelas || '-'}</td>
+                                <td style="padding:6px 8px; text-align:center;"><span style="display:inline-block; padding:2px 6px; background:#dbeafe; color:#1e40af; border-radius:10px; font-weight:700; font-size:11px;">${itemKelas}</span></td>
                                 <td style="padding:6px 8px;">${item.prodi || '-'}</td>
                                 <td style="padding:6px 8px; text-align:center;">${statusBadge}</td>
                             `;
@@ -1738,6 +2593,87 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Pulihkan status tampilan log jika pengguna sebelumnya membukanya
+    if (localStorage.getItem('penjadwalan_log_open') === '1') {
+        const panel = document.getElementById('containerLogGenerate');
+        if (panel && panel.style.display === 'none') {
+            toggleLogGenerate(false);
+        }
+    }
 });
+
+// ==========================================================================
+// Log & Diagnosa Penjadwalan - Toggle and Interactive Filtering
+// ==========================================================================
+function toggleLogGenerate(persist = true) {
+    const panel = document.getElementById('containerLogGenerate');
+    const box = document.getElementById('logGenerateBox');
+    const btn = document.getElementById('btnToggleLogGenerate');
+    const text = document.getElementById('textToggleLog');
+    
+    if (!panel) return;
+    
+    const isHidden = panel.style.display === 'none';
+    if (isHidden) {
+        panel.style.display = 'block';
+        if (box) box.classList.add('expanded');
+        if (btn) btn.classList.add('active');
+        if (text) text.textContent = 'Tutup Log & Diagnosa';
+        if (persist) localStorage.setItem('penjadwalan_log_open', '1');
+    } else {
+        panel.style.display = 'none';
+        if (box) box.classList.remove('expanded');
+        if (btn) btn.classList.remove('active');
+        if (text) text.textContent = 'Buka Log & Diagnosa';
+        if (persist) localStorage.setItem('penjadwalan_log_open', '0');
+    }
+}
+
+function applyLogFilter(filterType, btn) {
+    document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const blocks = document.querySelectorAll('.log-semester-block');
+    blocks.forEach(block => {
+        const itemGagal = block.querySelector('.log-item-gagal');
+        const itemSukses = block.querySelector('.log-item-sukses');
+        const itemWarning = block.querySelector('.log-item-warning');
+
+        if (filterType === 'all') {
+            if (itemGagal) itemGagal.style.display = '';
+            if (itemSukses) itemSukses.style.display = '';
+            if (itemWarning) itemWarning.style.display = '';
+            block.style.display = '';
+        } else if (filterType === 'gagal') {
+            if (itemGagal) itemGagal.style.display = '';
+            if (itemSukses) itemSukses.style.display = 'none';
+            if (itemWarning) itemWarning.style.display = 'none';
+            block.style.display = itemGagal ? '' : 'none';
+        } else if (filterType === 'sukses') {
+            if (itemGagal) itemGagal.style.display = 'none';
+            if (itemSukses) itemSukses.style.display = '';
+            if (itemWarning) itemWarning.style.display = 'none';
+            block.style.display = itemSukses ? '' : 'none';
+        } else if (filterType === 'warning') {
+            if (itemGagal) itemGagal.style.display = 'none';
+            if (itemSukses) itemSukses.style.display = 'none';
+            if (itemWarning) itemWarning.style.display = '';
+            block.style.display = itemWarning ? '' : 'none';
+        }
+    });
+}
+
+function filterLogBySemester(semester) {
+    const blocks = document.querySelectorAll('.log-semester-block');
+    blocks.forEach(block => {
+        const sem = block.getAttribute('data-semester');
+        if (semester === 'all' || sem === semester) {
+            block.style.display = '';
+        } else {
+            block.style.display = 'none';
+        }
+    });
+}
 </script>
 @endpush

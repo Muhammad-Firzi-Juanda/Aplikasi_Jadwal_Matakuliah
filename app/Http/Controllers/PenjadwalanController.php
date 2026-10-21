@@ -11,7 +11,9 @@ use App\Models\Ruangan;
 use App\Services\GeneticSchedulerService;
 use App\Services\MataKuliahImportService;
 use App\Services\SchedulerService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -68,9 +70,9 @@ class PenjadwalanController extends Controller
                 'mata_kuliah_details.sks',
                 'mata_kuliah_details.tipe',
                 'mata_kuliah_details.prodi',
-                'mata_kuliah_details.kelas',
+                'mata_kuliah_details.kelas as mk_kelas',
                 'rombels.kode_rombel',
-                'rombels.kelas',
+                'rombels.kelas as rombel_kelas',
                 'rombels.nomor_rombel',
                 'jadwals.hari',
                 'jadwals.jam_mulai',
@@ -78,6 +80,7 @@ class PenjadwalanController extends Controller
                 'ruangans.kode as kode_ruangan',
                 'ruangans.nama as nama_ruangan',
                 'dosens.nama as nama_dosen',
+                'dosens.inisial as inisial_dosen',
             ])
             ->orderBy('mata_kuliah_details.semester')
             ->orderBy('jadwals.hari')
@@ -85,6 +88,14 @@ class PenjadwalanController extends Controller
             ->orderBy('rombels.nomor_rombel')
             ->get()
             ->groupBy('semester');
+
+        $logGenerate = session('log_generate');
+        if (empty($logGenerate)) {
+            $logGenerate = Cache::get('penjadwalan_last_log', []);
+            if (! empty($logGenerate)) {
+                session(['log_generate' => $logGenerate]);
+            }
+        }
 
         return view('penjadwalan.index', [
             'mataKuliah' => $mataKuliah,
@@ -98,7 +109,7 @@ class PenjadwalanController extends Controller
             'semesterGenap' => self::SEMESTER_GENAP,
             'semesterAll' => self::SEMESTER_ALL,
             'maksPilihan' => SchedulerService::MAKS_PILIHAN,
-            'logGenerate' => session('log_generate', []),
+            'logGenerate' => $logGenerate,
             'userRole' => $userRole,
             'userProdi' => $userProdi,
             'prodiAktif' => session('prodi_aktif', 'all'),
@@ -108,10 +119,6 @@ class PenjadwalanController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
-
         $data = $this->validasi($request);
 
         // Jika user adalah Prodi, kunci prodi ke prodi milik user
@@ -143,9 +150,6 @@ class PenjadwalanController extends Controller
     public function update(Request $request, MataKuliahDetail $mataKuliah)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
 
         if ($user?->role === 'Prodi' && $user->prodi?->nama) {
             if (! str_contains($mataKuliah->prodi, $user->prodi->nama)) {
@@ -182,9 +186,6 @@ class PenjadwalanController extends Controller
     public function destroy(MataKuliahDetail $mataKuliah)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
 
         if ($user?->role === 'Prodi' && $user->prodi?->nama) {
             if (! str_contains($mataKuliah->prodi, $user->prodi->nama)) {
@@ -206,9 +207,6 @@ class PenjadwalanController extends Controller
     public function destroyAll(Request $request)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
 
         $userProdi = ($user?->role === 'Prodi') ? $user->prodi?->nama : null;
         $scope = $request->input('scope', 'all');
@@ -224,6 +222,7 @@ class PenjadwalanController extends Controller
             }
 
             session()->forget('log_generate');
+            Cache::forget('penjadwalan_last_log');
 
             return redirect()
                 ->route('penjadwalan.index')
@@ -253,6 +252,7 @@ class PenjadwalanController extends Controller
         }
 
         session()->forget(['log_generate', 'prodi_aktif']);
+        Cache::forget('penjadwalan_last_log');
 
         return redirect()
             ->route('penjadwalan.index')
@@ -263,9 +263,6 @@ class PenjadwalanController extends Controller
     public function generate(Request $request, SchedulerService $scheduler, GeneticSchedulerService $geneticScheduler)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
 
         $request->validate([
             'periode' => ['nullable', 'string', Rule::in(['ganjil', 'genap', 'keduanya', 'custom'])],
@@ -337,20 +334,20 @@ class PenjadwalanController extends Controller
         $metodeLabel = $algoritma === 'genetic' ? 'Genetic Algorithm' : 'Greedy Algorithm';
         $prodiFilterView = $prodiScheduler ?: 'all';
 
-        // Simpan ke persistent session agar tidak hilang saat pengguna melakukan refresh halaman
+        // Simpan ke persistent session dan cache agar tidak hilang saat pengguna melakukan refresh halaman
         session([
             'tab_aktif' => 'tab-jadwal',
             'periode_aktif' => $periodeTarget,
             'prodi_aktif' => $prodiFilterView,
             'log_generate' => $log,
         ]);
+        Cache::forever('penjadwalan_last_log', $log);
 
         $response = redirect()
             ->route('penjadwalan.index')
             ->with('tab_aktif', 'tab-jadwal')
             ->with('periode_aktif', $periodeTarget)
-            ->with('prodi_aktif', $prodiFilterView)
-            ->with('log_generate', $log);
+            ->with('prodi_aktif', $prodiFilterView);
 
         if (! empty($allKegagalan)) {
             $totalGagal = count($allKegagalan);
@@ -359,6 +356,16 @@ class PenjadwalanController extends Controller
         }
 
         return $response->with('flash_success', "Jadwal berhasil digenerate 100% menggunakan {$metodeLabel} untuk semester ".implode(', ', $semesters).'.');
+    }
+
+    public function clearLog(): RedirectResponse
+    {
+        session()->forget('log_generate');
+        Cache::forget('penjadwalan_last_log');
+
+        return redirect()
+            ->route('penjadwalan.index')
+            ->with('flash_success', 'Log generate terakhir berhasil dibersihkan.');
     }
 
     public function downloadTemplate(MataKuliahImportService $importer): BinaryFileResponse
@@ -371,12 +378,6 @@ class PenjadwalanController extends Controller
     public function previewImport(Request $request, MataKuliahImportService $importer)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.',
-            ], 403);
-        }
 
         $request->validate([
             'file' => ['required', 'file', 'max:10240'],
@@ -409,9 +410,6 @@ class PenjadwalanController extends Controller
     public function import(Request $request, MataKuliahImportService $importer)
     {
         $user = auth()->user();
-        if ($user?->role === 'Jurusan') {
-            return back()->with('flash_error', 'Peran Jurusan hanya memiliki akses monitoring dan evaluasi.');
-        }
 
         $request->validate([
             'file' => ['required', 'file', 'max:10240'],

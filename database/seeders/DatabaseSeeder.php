@@ -72,7 +72,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Pastikan ruangan bawaan kampus (12 ruang kelas + 2 lab) selalu tersedia
+        // Pastikan ruangan bawaan resmi kampus (12 ruang kelas + 2 lab + 1 auditorium) selalu tersedia
         $this->call(RuanganSeeder::class);
     }
 }

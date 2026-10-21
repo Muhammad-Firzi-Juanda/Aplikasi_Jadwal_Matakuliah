@@ -71,4 +71,28 @@ class MataKuliahDetail extends Model
     {
         return $query->where('prodi', $prodi);
     }
+
+    /**
+     * Kode mata kuliah murni tanpa imbuhan kelas (-A, -B, dll).
+     */
+    public function getCleanKodeMkAttribute(): string
+    {
+        return preg_replace('/-[A-Za-z0-9]+$/', '', $this->kode_mk ?? '');
+    }
+
+    /**
+     * Label kelas saja (A, B, C, D, ULANG) sesuai data.
+     */
+    public function getKelasLabelAttribute(): string
+    {
+        if (! empty($this->kelas)) {
+            return strtoupper(trim($this->kelas));
+        }
+
+        if (preg_match('/-([A-Za-z0-9]+)$/', $this->kode_mk ?? '', $matches)) {
+            return strtoupper($matches[1]);
+        }
+
+        return 'A';
+    }
 }

@@ -150,7 +150,8 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>No</th>
+                            <th style="width: 50px;">No</th>
+                            <th style="width: 120px;">Kode Dosen</th>
                             <th>NIDN</th>
                             <th>Nama Dosen</th>
                             <th>Jabatan</th>
@@ -162,6 +163,11 @@
                         @forelse ($dosens as $i => $d)
                             <tr>
                                 <td>{{ $i + 1 }}</td>
+                                <td>
+                                    <span class="badge-kode" style="display:inline-block; font-weight:700; color:#0369a1; background:#e0f2fe; padding:3px 10px; border-radius:6px; font-size:0.85rem; border:1px solid #bae6fd; letter-spacing:0.5px;">
+                                        {{ $d->inisial ?? '-' }}
+                                    </span>
+                                </td>
                                 <td><strong>{{ $d->nidn ?? '-' }}</strong></td>
                                 <td>{{ $d->nama }}</td>
                                 <td>{{ $d->jabatan ?? '-' }}</td>
@@ -169,7 +175,7 @@
                                 <td>{{ $d->telepon ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" style="text-align:center; padding:24px;">Belum ada data dosen.</td></tr>
+                            <tr><td colspan="7" style="text-align:center; padding:24px;">Belum ada data dosen.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -217,14 +223,18 @@
                             </thead>
                             <tbody>
                                 @foreach ($listMk as $mk)
-                                    <tr data-tipe="{{ $mk->tipe }}" data-kode="{{ strtolower($mk->kode_mk) }}" data-nama="{{ strtolower($mk->nama_mk) }}">
-                                        <td><span class="badge-kode">{{ $mk->kode_mk }}</span></td>
+                                    <tr data-tipe="{{ $mk->tipe }}" data-kode="{{ strtolower($mk->clean_kode_mk) }}" data-nama="{{ strtolower($mk->nama_mk) }}">
+                                        <td><span class="badge-kode">{{ $mk->clean_kode_mk }}</span></td>
                                         <td style="font-weight:600; color:#0f172a;">{{ $mk->nama_mk }}</td>
                                         <td style="text-align:center;"><span class="badge-sks">{{ $mk->sks }} SKS</span></td>
                                         <td style="text-align:center;"><span class="badge-tipe {{ strtolower($mk->tipe) }}">{{ $mk->tipe }}</span></td>
                                         <td>{{ $mk->dosenKetua->nama ?? '-' }}</td>
                                         <td>{{ $mk->dosenAnggota->nama ?? '-' }}</td>
-                                        <td style="text-align:center;"><span class="badge-kelas">{{ $mk->jumlah_kelas }}</span></td>
+                                        <td style="text-align:center;">
+                                            <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                                                {{ $mk->kelas_label }}
+                                            </span>
+                                        </td>
                                         <td style="text-align:center;">{{ $mk->kapasitas_per_kelas }}</td>
                                         <td style="text-align:center;">{{ $mk->butuh_lab ? '<span class="badge-tipe pilihan">Ya</span>' : '<span class="badge-tipe wajib">Tidak</span>' }}</td>
                                     </tr>
@@ -244,27 +254,33 @@
             {{-- ============ SECTION: ROMBEL ============ --}}
             <div id="section-rombel" class="content-section" style="margin-top: 40px; display: none;">
                 <div class="tab-header">
-                    <h2>Data Rombel - {{ $prodiName }}</h2>
+                    <h2>Data Rombel / Kelas - {{ $prodiName }}</h2>
                 </div>
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>No</th>
-                            <th>Kode Rombel</th>
+                            <th style="width: 50px;">No</th>
+                            <th>Kode MK</th>
                             <th>Mata Kuliah</th>
-                            <th>Semester</th>
-                            <th>SKS</th>
+                            <th style="text-align:center; width: 80px;">Kelas</th>
+                            <th style="text-align:center; width: 90px;">Semester</th>
+                            <th style="text-align:center; width: 70px;">SKS</th>
                             <th>Dosen Pengampu</th>
-                            <th>Peran</th>
-                            <th>Kapasitas</th>
+                            <th style="text-align:center;">Peran</th>
+                            <th style="text-align:center;">Kapasitas</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($rombels as $i => $r)
                             <tr>
                                 <td>{{ $i + 1 }}</td>
-                                <td><strong>{{ $r->kode_rombel }}</strong> @if($r->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $r->kelas }}</span>@endif</td>
-                                <td>{{ $r->mataKuliah->nama_mk ?? '-' }} <span class="badge-kode">{{ $r->mataKuliah->kode_mk ?? '' }}</span></td>
+                                <td style="white-space:nowrap;"><strong>{{ $r->clean_kode_mk }}</strong></td>
+                                <td>{{ $r->mataKuliah->nama_mk ?? '-' }}</td>
+                                <td style="text-align:center;">
+                                    <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                                        {{ $r->kelas_label }}
+                                    </span>
+                                </td>
                                 <td style="text-align:center;">{{ $r->mataKuliah->semester ?? '-' }}</td>
                                 <td style="text-align:center;">{{ $r->mataKuliah->sks ?? '-' }}</td>
                                 <td>{{ $r->dosenPengampu->nama ?? '-' }}</td>
@@ -276,7 +292,7 @@
                                 <td style="text-align:center;">{{ $r->kapasitas ?? $r->mataKuliah->kapasitas_per_kelas ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" style="text-align:center; padding:24px;">Belum ada data rombel.</td></tr>
+                            <tr><td colspan="9" style="text-align:center; padding:24px;">Belum ada data rombel.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -321,24 +337,38 @@
                                         <th>Jam</th>
                                         <th>Kode MK</th>
                                         <th>Mata Kuliah</th>
-                                        <th>Semester</th>
-                                        <th>SKS</th>
+                                        <th style="text-align:center;">Semester</th>
+                                        <th style="text-align:center;">SKS</th>
                                         <th>Dosen</th>
                                         <th>Ruangan</th>
-                                        <th>Rombel</th>
+                                        <th style="text-align:center;">Kelas</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($perHari[$hari] as $j)
                                         <tr class="jadwal-row" data-sem="{{ $j->rombel->mataKuliah->semester ?? '' }}">
-                                            <td style="white-space:nowrap;">{{ substr($j->jam_mulai, 0, 5) }} &ndash; {{ substr($j->jam_selesai, 0, 5) }}</td>
-                                            <td><strong>{{ $j->rombel->mataKuliah->kode_mk ?? '-' }}</strong></td>
-                                            <td>{{ $j->rombel->mataKuliah->nama_mk ?? '-' }}</td>
+                                            <td style="white-space:nowrap; font-weight:600; color:#0860be;">{{ substr($j->jam_mulai, 0, 5) }} &ndash; {{ substr($j->jam_selesai, 0, 5) }}</td>
+                                            <td style="white-space:nowrap;"><strong>{{ $j->clean_kode_mk }}</strong></td>
+                                            <td style="font-weight:600; color:#0f172a;">{{ $j->rombel->mataKuliah->nama_mk ?? '-' }}</td>
                                             <td style="text-align:center;">{{ $j->rombel->mataKuliah->semester ?? '-' }}</td>
-                                            <td style="text-align:center;">{{ $j->rombel->mataKuliah->sks ?? '-' }}</td>
-                                            <td>{{ $j->dosen->nama ?? '-' }}</td>
-                                            <td>{{ $j->ruangan->kode ?? '-' }}</td>
-                                            <td>{{ $j->rombel->kode_rombel ?? '-' }} @if($j->rombel->kelas) <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #059669; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">{{ $j->rombel->kelas }}</span>@endif</td>
+                                            <td style="text-align:center;"><span style="display:inline-block; padding:2px 8px; background:#e2e8f0; border-radius:12px; font-size:0.85rem; font-weight:600;">{{ $j->rombel->mataKuliah->sks ?? '-' }}</span></td>
+                                            <td>
+                                                <span title="{{ $j->dosen->nama ?? '-' }}" style="font-weight:700; color:#1e3a5f; cursor:help; background:#f8fafc; padding:3px 8px; border-radius:6px; font-size:0.85rem; display:inline-block; border:1px solid #cbd5e1;">
+                                                    {{ $j->dosen_inisial }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if($j->ruangan?->kode)
+                                                    <span style="display:inline-block; padding:3px 8px; background:#ecfdf5; color:#047857; font-weight:600; border-radius:6px; font-size:0.85rem;">{{ $j->ruangan->kode }}</span>
+                                                @else
+                                                    <span style="color:#94a3b8; font-style:italic;">-</span>
+                                                @endif
+                                            </td>
+                                            <td style="text-align:center;">
+                                                <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                                                    {{ $j->kelas_label }}
+                                                </span>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

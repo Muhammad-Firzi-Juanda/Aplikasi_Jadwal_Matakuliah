@@ -26,6 +26,21 @@ class JurusanDashboardController extends Controller
             ->get()
             ->groupBy('semester');
 
-        return view('jurusan.dashboard', compact('stats', 'dosens', 'mataKuliahs'));
+        $rombels = Rombel::with(['mataKuliah', 'dosenPengampu'])
+            ->orderBy('kode_rombel')
+            ->get();
+
+        $jadwals = Jadwal::with(['rombel.mataKuliah', 'dosen', 'ruangan'])
+            ->where('is_active', true)
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->get();
+
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $perHari = $jadwals->groupBy('hari');
+
+        return view('jurusan.dashboard', compact(
+            'stats', 'dosens', 'mataKuliahs', 'rombels', 'jadwals', 'hariList', 'perHari'
+        ));
     }
 }

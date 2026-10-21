@@ -213,6 +213,16 @@ class SchedulerService
         $slot = $this->cariSlot($mk, $cohort);
         if (! $slot) {
             $this->log[] = "GAGAL  {$mk->kode_mk} - {$mk->nama_mk}: tidak ada slot yang memenuhi syarat (ruangan/dosen).";
+            $this->kegagalan[] = [
+                'kode_mk' => $mk->kode_mk,
+                'nama_mk' => $mk->nama_mk,
+                'sks' => $mk->sks,
+                'semester' => $mk->semester,
+                'prodi' => $mk->prodi ?: 'Umum',
+                'tipe' => $mk->tipe,
+                'alasan' => 'Tidak ada slot waktu kosong yang memenuhi syarat (semua slot waktu di hari aktif bentrok dengan cohort yang sama, atau tidak ada ruangan/dosen yang bebas).',
+                'rekomendasi' => 'Buka tab Data Ruangan untuk mengaktifkan ruangan kuliah tambahan, atau periksa dosen pengampu agar tidak bentrok dengan jadwal lain.',
+            ];
 
             return;
         }
@@ -274,6 +284,19 @@ class SchedulerService
             ? " | PERINGATAN: {$sisa} kelas tidak dijadwalkan (kurang dosen/ruangan)"
             : '';
 
+        if ($sisa > 0) {
+            $this->kegagalan[] = [
+                'kode_mk' => $mk->kode_mk,
+                'nama_mk' => $mk->nama_mk,
+                'sks' => $mk->sks,
+                'semester' => $mk->semester,
+                'prodi' => $mk->prodi ?: 'Umum',
+                'tipe' => $mk->tipe,
+                'alasan' => "Hanya {$terpasang} dari {$mk->jumlah_kelas} kelas yang terjadwal. Sebanyak {$sisa} kelas tidak tertampung karena keterbatasan dosen pengampu bebas atau ruangan pada slot waktu ini.",
+                'rekomendasi' => 'Tugaskan dosen pengampu tambahan untuk kelas paralel ini atau sediakan slot/ruangan kuliah alternatif.',
+            ];
+        }
+
         $this->log[] = sprintf(
             'OK     %s - %s | %d/%d kelas | %s %s-%s%s',
             $mk->kode_mk,
@@ -332,6 +355,16 @@ class SchedulerService
             $slot = $this->cariSlotPilihan($grup, $cohort);
             if (! $slot) {
                 $this->log[] = "GAGAL  MK Pilihan kelompok {$noKelompok}: tidak ada slot yang bebas.";
+                $this->kegagalan[] = [
+                    'kode_mk' => 'PIL-KLP-'.$noKelompok,
+                    'nama_mk' => "MK Pilihan Kelompok {$noKelompok}",
+                    'sks' => 3,
+                    'semester' => $semester,
+                    'prodi' => 'Pilihan',
+                    'tipe' => 'Pilihan',
+                    'alasan' => "Tidak ada slot waktu bersama yang bebas untuk kelompok MK Pilihan {$noKelompok}.",
+                    'rekomendasi' => 'Kurangi jumlah kelompok MK Pilihan atau sediakan rentang jam/hari kuliah yang lebih luas di pengaturan.',
+                ];
 
                 continue;
             }
@@ -679,7 +712,7 @@ class SchedulerService
             ->when(
                 $mk->butuh_lab,
                 fn ($q) => $q->where('tipe', 'Lab'),
-                fn ($q) => $q->whereIn('tipe', ['Ruang Kelas', 'Aula'])
+                fn ($q) => $q->whereIn('tipe', ['Ruang Kelas', 'Aula', 'Auditorium'])
             )
             ->get()
             ->reject(fn ($r) => $this->ruanganBentrok($r->id, $slot))
@@ -824,6 +857,7 @@ class SchedulerService
     {
         $this->log = [];
         $this->peringatan = [];
+        $this->kegagalan = [];
         $this->slotPilihan = [];
         $this->pakaiRuangan = [];
         $this->pakaiDosen = [];
@@ -930,6 +964,7 @@ class SchedulerService
             'jumlah_jadwal' => $jumlah,
             'log' => $this->log,
             'peringatan' => $this->peringatan,
+            'kegagalan' => $this->kegagalan,
             'catatan' => $catatan,
             'slot_pilihan' => $slot,
             'kuota_pilihan' => count($slot),

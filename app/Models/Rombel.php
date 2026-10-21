@@ -61,4 +61,40 @@ class Rombel extends Model
 
         return $mulai->diffInMinutes($selesai);
     }
+
+    /**
+     * Kode mata kuliah murni tanpa imbuhan kelas.
+     */
+    public function getCleanKodeMkAttribute(): string
+    {
+        if (! empty($this->mataKuliah?->clean_kode_mk)) {
+            return $this->mataKuliah->clean_kode_mk;
+        }
+
+        return preg_replace('/-[A-Za-z0-9]+$/', '', $this->kode_rombel ?? '');
+    }
+
+    /**
+     * Label rombel/kelas saja (A, B, C, D, ULANG) sesuai data.
+     */
+    public function getKelasLabelAttribute(): string
+    {
+        if (! empty($this->kelas)) {
+            return strtoupper(trim($this->kelas));
+        }
+
+        if (! empty($this->mataKuliah?->kelas_label)) {
+            return $this->mataKuliah->kelas_label;
+        }
+
+        if (preg_match('/-([A-Za-z0-9]+)$/', $this->kode_rombel ?? '', $matches)) {
+            return strtoupper($matches[1]);
+        }
+
+        if (! empty($this->nomor_rombel)) {
+            return chr(64 + min(26, (int) $this->nomor_rombel));
+        }
+
+        return 'A';
+    }
 }

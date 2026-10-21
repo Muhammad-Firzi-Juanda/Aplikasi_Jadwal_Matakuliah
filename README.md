@@ -2,21 +2,25 @@
 
 [![Laravel](https://img.shields.io/badge/Laravel-11%2F12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![Tests](https://img.shields.io/badge/Tests-58%20Passed%20(100%25)-success?style=for-the-badge&logo=phpunit)](https://phpunit.de)
+[![Tests](https://img.shields.io/badge/Tests-73%20Passed%20(100%25)-success?style=for-the-badge&logo=phpunit)](https://phpunit.de)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Laravel%20Pint-00D26A?style=for-the-badge)](https://laravel.com/docs/pint)
+[![Architecture Docs](https://img.shields.io/badge/Documentation-Backend%20Architecture-blue?style=for-the-badge)](docs/BACKEND_ARCHITECTURE.md)
 
 Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*Monolith Laravel MVC*) yang dirancang untuk mengotomatisasi penyusunan jadwal perkuliahan bebas bentrok (*conflict-free*), mengelola data akademik per program studi/fakultas, dan memproses impor data perkuliahan dari Excel/Spreadsheet secara cerdas.
+
+> 📖 **Dokumentasi Lengkap Logika Backend & Developer Guide:**  
+> Untuk penjelasan mendalam mengenai alur logika, constraint satisfaction, algoritma genetika, skema database, dan panduan pengembang selanjutnya, silakan baca [**Dokumentasi Arsitektur Backend (docs/BACKEND_ARCHITECTURE.md)**](docs/BACKEND_ARCHITECTURE.md).
 
 ---
 
 ## 📌 Ringkasan & Arsitektur Sistem
 
 - **Framework:** Laravel 11/12 (PHP 8.4)
-- **Arsitektur:** Model-View-Controller (MVC) Monolith
+- **Arsitektur:** Model-View-Controller (MVC) Monolith + Service Layer Pattern
 - **Frontend:** Blade Templates, Responsive Modern Vanilla CSS & Vanilla JavaScript
 - **Database:** MySQL / SQLite
 - **Dependency Management:** Composer & NPM
-- **Testing Suite:** PHPUnit (58 Feature & Unit Tests)
+- **Testing Suite:** PHPUnit (73 Feature & Unit Tests, 378 Assertions - 100% Passed)
 - **Formatting Standard:** Laravel Pint (PSR-12 / Laravel Standard)
 
 ---
@@ -73,7 +77,7 @@ Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*M
 | **Database Integrity & Cascading** | **AMAN** | Foreign key constraints pada tabel `rombels` dan `jadwals` dengan `onDelete('cascade')`/`onDelete('set null')`. Kolom `dosen_id` dan `ruangan_id` di `jadwals` bersifat nullable untuk mendukung MK tanpa dosen/ruangan. |
 | **Autentikasi & Sandi** | **AMAN** | Enkripsi kata sandi menggunakan Bcrypt Hash, pembatasan rate limit login (`throttle:20,1`). |
 | **Format & Gaya Kode** | **LULUS** | Seluruh kode PHP telah diformat dan divalidasi menggunakan **Laravel Pint**. |
-| **Feature & Regression Tests** | **LULUS** | 58 dari 58 skenario pengujian (`MataKuliahImportTest`, `PenjadwalanDestroyAllTest`, `SchedulerServiceTest`, `UserManagementTest`) lulus 100%. |
+| **Feature & Regression Tests** | **LULUS** | 63 dari 63 skenario pengujian (`MataKuliahImportTest`, `PenjadwalanDestroyAllTest`, `SchedulerServiceTest`, `UserManagementTest`, `RuanganManagementTest`) lulus 100%. |
 
 ---
 
@@ -118,12 +122,22 @@ Sistem Informasi Manajemen dan Penjadwalan Mata Kuliah Otomatis berbasis web (*M
 ## 🛠️ Panduan Instalasi & Menjalankan Aplikasi
 
 ### 1. Kebutuhan Sistem
-- **PHP** >= 8.3 (Disarankan PHP 8.4)
+- **PHP** >= 8.4 (Disarankan PHP 8.4.x)
 - **Composer** >= 2.0
 - **Node.js** >= 18 & **NPM**
-- **MySQL** / MariaDB
+- **SQLite** (bawaan tanpa setup) atau **MySQL** >= 8.0 / MariaDB
 
-### 2. Langkah Instalasi
+### 2. Langkah Instalasi Otomatis (Direkomendasikan)
+Cukup jalankan satu perintah berikut untuk mengonfigurasi seluruh aplikasi (dependensi, database, migrasi, seeder, dan build aset):
+
+```bash
+composer run setup
+php artisan serve
+```
+
+---
+
+### 3. Langkah Instalasi Manual (Alternatif)
 ```bash
 # Clone repositori
 git clone https://github.com/Muhammad-Firzi-Juanda/Aplikasi_Jadwal_Matakuliah.git
@@ -132,8 +146,9 @@ cd Aplikasi_Jadwal_Matakuliah
 # Instal dependensi PHP
 composer install
 
-# Instal dependensi frontend
+# Instal dependensi frontend & build asset
 npm install
+npm run build
 
 # Salin file environment
 cp .env.example .env
@@ -141,7 +156,7 @@ cp .env.example .env
 # Generate application key
 php artisan key:generate
 
-# Konfigurasi database di file .env, lalu jalankan migrasi & seeder:
+# Migrasi tabel dan data awal (seeder akun & ruangan)
 php artisan migrate --seed
 
 # Jalankan pengujian unit & feature
@@ -163,6 +178,7 @@ Aplikasi dapat diakses melalui browser pada `http://127.0.0.1:8000`.
 | **Admin Akun** | `admin@apjad.com` | `admin123` |
 | **Admin Fakultas** | `bdarell@gmail.com` | `password123` |
 | **Admin Jurusan** | `randtian@gmail.com` | `password123` |
+| **Admin Prodi (TI)** | `prodi@apjad.com` | `password123` |
 
 ---
 

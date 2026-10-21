@@ -654,4 +654,12 @@ class SchedulerServiceTest extends TestCase
         $this->assertSame(0, $ada, 'MK Pilihan tanpa dosen seharusnya tidak dijadwalkan.');
         $this->assertStringContainsString('IF1498', implode(' ', $hasil['peringatan']));
     }
+
+    public function test_hasil_generate_mengembalikan_array_kegagalan_dan_diagnosa_terstruktur(): void
+    {
+        $hasil = $this->generate();
+
+        $this->assertArrayHasKey('kegagalan', $hasil);
+        $this->assertIsArray($hasil['kegagalan']);
+    }
 }

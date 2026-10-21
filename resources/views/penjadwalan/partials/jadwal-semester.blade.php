@@ -79,15 +79,35 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($perHari[$hari] as $j)
+                                            @php
+                                                $cleanKodeMk = preg_replace('/-[A-Za-z0-9]+$/', '', $j->kode_mk ?? '');
+                                                $kelasLabel = $j->rombel_kelas ?? $j->mk_kelas ?? null;
+                                                if (! $kelasLabel && preg_match('/-([A-Za-z0-9]+)$/', $j->kode_rombel ?? '', $matches)) {
+                                                    $kelasLabel = $matches[1];
+                                                }
+                                                if (! $kelasLabel && preg_match('/-([A-Za-z0-9]+)$/', $j->kode_mk ?? '', $matches)) {
+                                                    $kelasLabel = $matches[1];
+                                                }
+                                                $kelasLabel = strtoupper(trim((string) ($kelasLabel ?: 'A')));
+                                                $dosenInisial = ! empty($j->inisial_dosen) ? $j->inisial_dosen : (\App\Models\Dosen::generateInisialFromName($j->nama_dosen) ?: '-');
+                                            @endphp
                                             <tr class="jadwal-row-item" data-prodi="{{ $j->prodi }}">
                                                 <td style="white-space: nowrap; font-weight: 600; color: #0860be;">
                                                     {{ substr($j->jam_mulai, 0, 5) }} - {{ substr($j->jam_selesai, 0, 5) }}
                                                 </td>
-                                                <td><strong>{{ $j->kode_mk }}</strong></td>
+                                                <td style="white-space: nowrap;"><strong>{{ $cleanKodeMk }}</strong></td>
                                                 <td>{{ $j->nama_mk }}</td>
                                                 <td><span style="display: inline-block; padding: 2px 8px; background: #e2e8f0; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">{{ $j->sks }}</span></td>
-                                                <td><span style="font-weight: 600; color: #334155;">{{ $j->kode_rombel }}</span></td>
-                                                <td>{{ $j->nama_dosen ?? '-' }}</td>
+                                                <td>
+                                                    <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">
+                                                        {{ $kelasLabel }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span title="{{ $j->nama_dosen ?? '-' }}" style="font-weight: 700; color: #1e3a5f; cursor: help; background: #f8fafc; padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; display: inline-block; border: 1px solid #cbd5e1;">
+                                                        {{ $dosenInisial }}
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     @if($j->kode_ruangan)
                                                         <span style="display: inline-block; padding: 3px 8px; background: #ecfdf5; color: #047857; font-weight: 600; border-radius: 6px; font-size: 0.85rem;">{{ $j->kode_ruangan }}</span>

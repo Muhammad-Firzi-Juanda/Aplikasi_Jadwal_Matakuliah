@@ -88,8 +88,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/prodi/{prodi}', [ProdiController::class, 'destroy'])->name('prodi.destroy');
     });
 
-    // Scheduling & Timetable routes for Super Admin, Fakultas, Jurusan, and Prodi
-    Route::middleware('check_role:Super Admin,Fakultas,Jurusan,Prodi')->group(function () {
+    // Scheduling & Timetable routes for Super Admin, Fakultas, and Prodi
+    Route::middleware('check_role:Super Admin,Fakultas,Prodi')->group(function () {
         Route::get('/jadwal-kuliah', [JadwalKuliahController::class, 'index'])->name('jadwal-kuliah.index');
 
         Route::get('/penjadwalan', [PenjadwalanController::class, 'index'])->name('penjadwalan.index');
@@ -101,6 +101,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/penjadwalan/import-preview', [PenjadwalanController::class, 'previewImport'])->name('penjadwalan.import.preview');
         Route::post('/penjadwalan/import', [PenjadwalanController::class, 'import'])->name('penjadwalan.import');
         Route::delete('/penjadwalan/hapus-semua', [PenjadwalanController::class, 'destroyAll'])->name('penjadwalan.destroy-all');
+        Route::post('/penjadwalan/clear-log', [PenjadwalanController::class, 'clearLog'])->name('penjadwalan.clear-log');
 
         // API Routes for Ruangan (AJAX)
         Route::get('/api/ruangan/{ruangan}', [RuanganController::class, 'show'])->name('api.ruangan.show');

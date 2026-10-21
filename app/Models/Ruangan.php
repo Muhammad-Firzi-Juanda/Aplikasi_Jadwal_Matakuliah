@@ -39,15 +39,17 @@ class Ruangan extends Model
         'R05-FTTK', 'R06-FTTK', 'R07-FTTK', 'R08-FTTK',
         'R09-FTTK', 'R10-FTTK', 'R11-FTTK', 'R12-FTTK',
         'LAB-01-FTTK', 'LAB-02-FTTK',
+        'AUDIT-01-FTTK', 'AUDIT', 'AUDITORIUM',
     ];
 
     /**
-     * Mengecek apakah ruangan ini merupakan ruangan bawaan/resmi kampus (12 kelas + 2 lab).
+     * Mengecek apakah ruangan ini merupakan ruangan bawaan/resmi kampus (12 kelas + 2 lab + 1 auditorium).
      */
     public function isDefault(): bool
     {
         return in_array($this->kode, self::DEFAULT_KODES, true)
-            || (bool) preg_match('/^(R(0?[1-9]|1[0-2])|LAB-0?[1-2])-FTTK$/i', (string) $this->kode);
+            || in_array($this->kode, ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'LAB1', 'LAB2', 'AUDIT', 'AUDITORIUM', 'AUDIT-01-FTTK'], true)
+            || (bool) preg_match('/^(R(0?[1-9]|1[0-2])|LAB-?0?[1-2]|AUDIT(-?0?1)?)(-FTTK)?$/i', (string) $this->kode);
     }
 
     public function scopeActive($query)
