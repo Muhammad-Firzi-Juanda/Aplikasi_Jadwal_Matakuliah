@@ -186,16 +186,20 @@ Aplikasi dapat diakses melalui browser pada `http://127.0.0.1:8000`.
 
 ---
 
-## 👤 Akun Pengujian Bawaan
+## 👤 Tingkatan Hak Akses (Role-Based Access Control)
 
-| Role | Email | Password | Keterangan |
-| :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@siwalan.com` | `admin123` | Akses penuh seluruh sistem |
-| **Admin Akun** | `admin@apjad.com` | `admin123` | Pengelola akun pengguna |
-| **Admin Fakultas** | `adminf@gmail.com` | `password123` | Tingkat fakultas |
-| **Admin Jurusan** | `adminj@gmail.com` | `password123` | Tingkat jurusan |
-| **Admin Prodi (Informatika)** | `adminif@gmail.com` | `password123` | Prodi Teknik Informatika (INF) |
-| **Admin Prodi (Elektro)** | `adminprodie@gmail.com` | `password123` | Prodi Teknik Elektro (EEL) |
+Aplikasi ini menggunakan sistem hak akses bertingkat dengan pembagian wewenang sebagai berikut:
+
+| Tingkat / Role | Cakupan Wewenang | Keterangan |
+| :--- | :--- | :--- |
+| **Super Admin** | Akses penuh konfigurasi sistem, data fakultas, ruangan, seluruh matakuliah, manajemen pengguna, dan mesin penjadwalan. | Administrator Utama |
+| **Admin Akun** | Akses manajemen pembuatan dan pengaturan akun pengguna. | Administrator Akun |
+| **Admin Fakultas** | Pemantauan jadwal dan matakuliah dalam lingkup fakultas. | Tingkat Fakultas |
+| **Admin Jurusan** | Pemantauan jadwal dan matakuliah dalam lingkup jurusan. | Tingkat Jurusan |
+| **Admin Prodi** | Pemantauan jadwal dan matakuliah terisolasi khusus program studi yang bersangkutan. | Tingkat Program Studi |
+
+> 🔒 **Keamanan Kredensial:**  
+> Untuk keperluan pengujian di lingkungan lokal (*development*), data akun awal dapat di-generate melalui database seeder (`database/seeders/DatabaseSeeder.php`). Kredensial akun sengaja tidak dicantumkan di repositori publik demi keamanan. Anda dapat membuat atau menyesuaikan akun melalui antarmuka Super Admin di server lokal.
 
 ---
 
