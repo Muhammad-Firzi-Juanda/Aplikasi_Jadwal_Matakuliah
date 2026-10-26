@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\MataKuliah;
+use App\Models\MataKuliahDetail;
+use App\Models\Prodi;
+use App\Models\Rombel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class MataKuliahController extends Controller
 {
@@ -27,6 +32,13 @@ class MataKuliahController extends Controller
             'tipe.required' => 'Tipe wajib dipilih!',
             'level_id.required' => 'Pilih Fakultas/Prodi terlebih dahulu!',
         ]);
+
+        if ($validated['tipe'] === 'Prodi') {
+            $prodiObj = Prodi::find($validated['level_id']);
+            $validated['pemilik'] = $prodiObj ? $prodiObj->nama : 'Teknik Informatika';
+        } else {
+            $validated['pemilik'] = 'Fakultas';
+        }
 
         MataKuliah::create($validated);
 
@@ -53,6 +65,13 @@ class MataKuliahController extends Controller
             'level_id.required' => 'Pilih Fakultas/Prodi terlebih dahulu!',
         ]);
 
+        if ($validated['tipe'] === 'Prodi') {
+            $prodiObj = Prodi::find($validated['level_id']);
+            $validated['pemilik'] = $prodiObj ? $prodiObj->nama : 'Teknik Informatika';
+        } else {
+            $validated['pemilik'] = 'Fakultas';
+        }
+
         $mataKuliah->update($validated);
 
         return redirect()->route('jadwal-kuliah.index')->with('flash_success', 'Mata kuliah berhasil diperbarui!');
@@ -65,8 +84,35 @@ class MataKuliahController extends Controller
             $mataKuliah = MataKuliah::findOrFail($mkId);
         }
 
+        $kodeMk = $mataKuliah->kode;
+        $mkId = $mataKuliah->id;
+
+        // 1. Cari MataKuliahDetails yang berelasi
+        $mkDetailIds = MataKuliahDetail::where('master_mk_id', $mkId)
+            ->orWhere('kode_mk', 'like', "{$kodeMk}%")
+            ->pluck('id')
+            ->toArray();
+
+        // 2. Cari Rombel
+        $rombelIds = Rombel::whereIn('mata_kuliah_detail_id', $mkDetailIds)->pluck('id')->toArray();
+
+        // 3. Hapus Jadwal dari rombel mata kuliah ini
+        if (! empty($rombelIds)) {
+            DB::table('jadwals')->whereIn('rombel_id', $rombelIds)->delete();
+            DB::table('rombels')->whereIn('id', $rombelIds)->delete();
+        }
+
+        // 4. Hapus MataKuliahDetails terkait
+        if (! empty($mkDetailIds)) {
+            MataKuliahDetail::whereIn('id', $mkDetailIds)->delete();
+        }
+
+        // 5. Hapus Master MataKuliah
         $mataKuliah->delete();
 
-        return redirect()->route('jadwal-kuliah.index')->with('flash_success', 'Mata kuliah berhasil dihapus!');
+        Cache::forget('penjadwalan_last_log');
+        session()->forget('log_generate');
+
+        return redirect()->route('jadwal-kuliah.index')->with('flash_success', "Mata kuliah {$kodeMk} beserta rombel dan jadwal terkait berhasil dihapus!");
     }
 }

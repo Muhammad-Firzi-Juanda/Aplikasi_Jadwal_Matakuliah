@@ -35,6 +35,7 @@ class PenjadwalanController extends Controller
         $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota', 'masterMk'])
             ->where('is_active', 1)
             ->where('status_tawar', 1)
+            ->bukanMengulang()
             ->orderBy('semester')
             ->orderBy('kode_mk');
 
@@ -53,7 +54,19 @@ class PenjadwalanController extends Controller
             ->leftJoin('ruangans', 'ruangans.id', '=', 'jadwals.ruangan_id')
             ->leftJoin('dosens', 'dosens.id', '=', 'jadwals.dosen_id')
             ->where('jadwals.is_active', 1)
-            ->where('rombels.is_active', 1);
+            ->where('rombels.is_active', 1)
+            ->where(function ($q) {
+                $q->whereNull('rombels.kelas')
+                    ->orWhere(function ($sub) {
+                        $sub->where('rombels.kelas', 'not like', '%ulang%')
+                            ->where('rombels.kelas', 'not like', '%mengulang%');
+                    });
+            })
+            ->where('rombels.kode_rombel', 'not like', '%-ulang%')
+            ->where('rombels.kode_rombel', 'not like', '%-mengulang%')
+            ->where('mata_kuliah_details.kode_mk', 'not like', '%-ulang%')
+            ->where('mata_kuliah_details.kode_mk', 'not like', '%-mengulang%')
+            ->where('mata_kuliah_details.nama_mk', 'not like', '%(mengulang)%');
 
         if ($userRole === 'Prodi' && $userProdi) {
             $jadwalQuery->where(function ($q) use ($userProdi) {
@@ -70,15 +83,21 @@ class PenjadwalanController extends Controller
                 'mata_kuliah_details.sks',
                 'mata_kuliah_details.tipe',
                 'mata_kuliah_details.prodi',
+                'mata_kuliah_details.butuh_lab',
+                'mata_kuliah_details.tanpa_ruangan',
+                'mata_kuliah_details.kapasitas_per_kelas',
                 'mata_kuliah_details.kelas as mk_kelas',
                 'rombels.kode_rombel',
                 'rombels.kelas as rombel_kelas',
                 'rombels.nomor_rombel',
+                'rombels.kapasitas as rombel_kapasitas',
                 'jadwals.hari',
                 'jadwals.jam_mulai',
                 'jadwals.jam_selesai',
                 'ruangans.kode as kode_ruangan',
                 'ruangans.nama as nama_ruangan',
+                'ruangans.tipe as tipe_ruangan',
+                'ruangans.kapasitas as kapasitas_ruangan',
                 'dosens.nama as nama_dosen',
                 'dosens.inisial as inisial_dosen',
             ])
@@ -101,9 +120,9 @@ class PenjadwalanController extends Controller
             'mataKuliah' => $mataKuliah,
             'jadwal' => $jadwal,
             'dosens' => Dosen::orderBy('nama')->get(),
-            'ruangans' => Ruangan::orderBy('kode')->get(),
-            'ruangan' => Ruangan::orderBy('kode')->get(),
-            'ruanganAktif' => Ruangan::where('is_active', 1)->orderBy('kode')->get(),
+            'ruangans' => Ruangan::with('prodi')->orderBy('kode')->get(),
+            'ruangan' => Ruangan::with('prodi')->orderBy('kode')->get(),
+            'ruanganAktif' => Ruangan::with('prodi')->where('is_active', 1)->orderBy('kode')->get(),
             'daftarProdi' => Prodi::orderBy('nama')->get(),
             'semesterGanjil' => self::SEMESTER_GANJIL,
             'semesterGenap' => self::SEMESTER_GENAP,
@@ -128,6 +147,9 @@ class PenjadwalanController extends Controller
 
         // Sinkronisasi ke master mata_kuliah jika ada
         $cleanKode = preg_replace('/-[A-Za-z0-9]+$/', '', $data['kode_mk']);
+        $prodiModel = Prodi::where('nama', $data['prodi'])->first();
+        $prodiLevelId = $prodiModel ? $prodiModel->id : 1;
+
         $master = MataKuliah::firstOrCreate(
             ['kode' => $cleanKode],
             [
@@ -137,7 +159,7 @@ class PenjadwalanController extends Controller
                 'tipe' => 'Prodi',
                 'kategori' => 'MK Prodi Wajib',
                 'pemilik' => $data['prodi'],
-                'level_id' => 1,
+                'level_id' => $prodiLevelId,
             ]
         );
         $data['master_mk_id'] = $master->id;
@@ -164,6 +186,9 @@ class PenjadwalanController extends Controller
         }
 
         $cleanKode = preg_replace('/-[A-Za-z0-9]+$/', '', $data['kode_mk']);
+        $prodiModel = Prodi::where('nama', $data['prodi'])->first();
+        $prodiLevelId = $prodiModel ? $prodiModel->id : 1;
+
         $master = MataKuliah::firstOrCreate(
             ['kode' => $cleanKode],
             [
@@ -173,7 +198,7 @@ class PenjadwalanController extends Controller
                 'tipe' => 'Prodi',
                 'kategori' => 'MK Prodi Wajib',
                 'pemilik' => $data['prodi'],
-                'level_id' => 1,
+                'level_id' => $prodiLevelId,
             ]
         );
         $data['master_mk_id'] = $master->id;
@@ -239,6 +264,14 @@ class PenjadwalanController extends Controller
             DB::table('rombels')->whereIn('id', $idsRombel)->delete();
             $count = $query->count();
             $query->delete();
+
+            // Bersihkan dosen tanpa penugasan di prodi ini agar tidak menumpuk
+            Dosen::where('prodi', 'like', "%{$userProdi}%")
+                ->whereDoesntHave('mataKuliahKetua')
+                ->whereDoesntHave('mataKuliahAnggota')
+                ->whereDoesntHave('jadwals')
+                ->whereDoesntHave('rombels')
+                ->delete();
         } else {
             DB::table('jadwals')->delete();
             DB::table('rombels')->delete();
@@ -249,6 +282,13 @@ class PenjadwalanController extends Controller
             }
             $count = $query->count();
             $query->delete();
+
+            // Bersihkan dosen yang tidak lagi memiliki relasi di mana pun agar tidak menumpuk
+            Dosen::whereDoesntHave('mataKuliahKetua')
+                ->whereDoesntHave('mataKuliahAnggota')
+                ->whereDoesntHave('jadwals')
+                ->whereDoesntHave('rombels')
+                ->delete();
         }
 
         session()->forget(['log_generate', 'prodi_aktif']);
@@ -278,13 +318,61 @@ class PenjadwalanController extends Controller
         ]);
 
         $semesters = array_map('intval', $request->input('semester'));
-        $prodi = $request->input('prodi') ?: 'Teknik Informatika';
+        $prodiInput = $request->input('prodi');
 
         if ($user?->role === 'Prodi' && $user->prodi?->nama) {
-            $prodi = $user->prodi->nama;
+            $prodiInput = $user->prodi->nama;
         }
 
-        $prodiScheduler = in_array(strtolower(trim($prodi)), ['semua', 'all'], true) ? null : $prodi;
+        // Jika prodi belum dipilih sama sekali, pilih "Semua" jika ada data atau minta pilih prodi
+        if (empty($prodiInput)) {
+            $prodiInput = 'Semua';
+        }
+
+        $isAllProdi = in_array(strtolower(trim($prodiInput)), ['semua', 'all', 'lintas prodi'], true);
+        $prodiScheduler = $isAllProdi ? null : $prodiInput;
+        $prodi = $prodiScheduler ?: 'Semua Program Studi';
+
+        // Validasi bertahap: pastikan data mata kuliah sudah diinput terlebih dahulu untuk prodi yang dipilih
+        $mkCheckQuery = MataKuliahDetail::where('is_active', 1)
+            ->where('status_tawar', 1)
+            ->bukanMengulang()
+            ->whereIn('semester', $semesters);
+
+        if ($prodiScheduler) {
+            $mkCheckQuery->where(function ($q) use ($prodiScheduler) {
+                $q->where('prodi', 'like', "%{$prodiScheduler}%")
+                    ->orWhereIn('kategori', ['MK Universitas', 'MK Fakultas']);
+            });
+        }
+
+        $totalMkSiapTawar = $mkCheckQuery->count();
+        if ($totalMkSiapTawar === 0) {
+            $targetProdiLabel = $prodiScheduler ? "Program Studi '{$prodiScheduler}'" : 'semua program studi';
+
+            return redirect()
+                ->route('penjadwalan.index')
+                ->with('tab_aktif', 'tab-input')
+                ->with('flash_error', "Belum ada mata kuliah aktif/siap tawar untuk {$targetProdiLabel} pada semester yang dipilih (".implode(', ', $semesters).'). Silakan buat/input atau import data mata kuliah untuk prodi ini terlebih dahulu.');
+        }
+
+        // Kontrol Kuota saat Generate: jika opsi override kuota aktif, seragamkan kuota per kelas
+        if ($request->boolean('override_kuota') && $request->filled('kuota_per_kelas')) {
+            $kuotaBaru = (int) $request->input('kuota_per_kelas');
+            if ($kuotaBaru >= 1 && $kuotaBaru <= 300) {
+                $mkUpdateQuery = MataKuliahDetail::where('is_active', 1)
+                    ->where('status_tawar', 1)
+                    ->bukanMengulang()
+                    ->whereIn('semester', $semesters);
+                if ($prodiScheduler) {
+                    $mkUpdateQuery->where(function ($q) use ($prodiScheduler) {
+                        $q->where('prodi', 'like', "%{$prodiScheduler}%")
+                            ->orWhereIn('kategori', ['MK Universitas', 'MK Fakultas']);
+                    });
+                }
+                $mkUpdateQuery->update(['kapasitas_per_kelas' => $kuotaBaru]);
+            }
+        }
 
         $algoritma = $request->input('algoritma', 'greedy');
         $options = array_filter([
@@ -518,6 +606,35 @@ class PenjadwalanController extends Controller
             'butuh_lab' => $request->boolean('butuh_lab'),
             'tanpa_ruangan' => $request->boolean('tanpa_ruangan'),
         ];
+    }
+
+    public function updateKuota(Request $request, MataKuliahDetail $mataKuliah)
+    {
+        $request->validate([
+            'kapasitas_per_kelas' => ['required', 'integer', 'min:1', 'max:300'],
+        ]);
+
+        $kuota = (int) $request->input('kapasitas_per_kelas');
+        $mataKuliah->update([
+            'kapasitas_per_kelas' => $kuota,
+        ]);
+
+        $mataKuliah->rombels()->update([
+            'kapasitas' => $kuota,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Kuota kelas berhasil diperbarui.',
+                'kapasitas_per_kelas' => $mataKuliah->kapasitas_per_kelas,
+            ]);
+        }
+
+        return redirect()->route('penjadwalan.index')
+            ->with('tab_aktif', 'tab-input')
+            ->with('flash_success', "Kuota kelas {$mataKuliah->kode_mk} berhasil diubah menjadi {$mataKuliah->kapasitas_per_kelas} mahasiswa.")
+            ->with('success', "Kuota kelas {$mataKuliah->kode_mk} berhasil diubah menjadi {$mataKuliah->kapasitas_per_kelas} mahasiswa.");
     }
 
     protected function kembali(string $pesan)

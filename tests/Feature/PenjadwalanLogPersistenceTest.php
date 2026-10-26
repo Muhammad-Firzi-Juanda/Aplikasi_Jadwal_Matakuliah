@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\MataKuliahDetail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -25,6 +26,20 @@ class PenjadwalanLogPersistenceTest extends TestCase
     public function test_log_generate_persists_across_page_refreshes(): void
     {
         $admin = $this->superAdmin();
+
+        MataKuliahDetail::create([
+            'kode_mk' => 'INF201',
+            'nama_mk' => 'Struktur Data',
+            'sks' => 3,
+            'semester' => 2,
+            'kelas' => 'A',
+            'tipe' => 'Wajib',
+            'prodi' => 'Teknik Informatika',
+            'jumlah_kelas' => 1,
+            'kapasitas_per_kelas' => 40,
+            'is_active' => true,
+            'status_tawar' => true,
+        ]);
 
         // 1. Simulasikan proses generate
         $response = $this->actingAs($admin)->post(route('penjadwalan.generate'), [

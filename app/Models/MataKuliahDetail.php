@@ -73,6 +73,39 @@ class MataKuliahDetail extends Model
     }
 
     /**
+     * Scope untuk menyaring dan mengecualikan kelas mengulang.
+     */
+    public function scopeBukanMengulang($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('kelas')
+                ->orWhere(function ($sub) {
+                    $sub->where('kelas', 'not like', '%ulang%')
+                        ->where('kelas', 'not like', '%mengulang%');
+                });
+        })
+            ->where('kode_mk', 'not like', '%-ulang%')
+            ->where('kode_mk', 'not like', '%-mengulang%')
+            ->where('nama_mk', 'not like', '%(mengulang)%')
+            ->where('nama_mk', 'not like', '%[mengulang]%');
+    }
+
+    /**
+     * Cek apakah mata kuliah / kelas ini merupakan kelas mengulang.
+     */
+    public function getIsMengulangAttribute(): bool
+    {
+        $kelas = strtolower((string) ($this->kelas ?? ''));
+        $kode = strtolower((string) ($this->kode_mk ?? ''));
+        $nama = strtolower((string) ($this->nama_mk ?? ''));
+
+        return str_contains($kelas, 'ulang')
+            || str_contains($kode, '-ulang')
+            || str_contains($kode, '-mengulang')
+            || str_contains($nama, 'mengulang');
+    }
+
+    /**
      * Kode mata kuliah murni tanpa imbuhan kelas (-A, -B, dll).
      */
     public function getCleanKodeMkAttribute(): string

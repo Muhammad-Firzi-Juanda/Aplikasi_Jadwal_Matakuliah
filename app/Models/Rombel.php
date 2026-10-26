@@ -63,6 +63,37 @@ class Rombel extends Model
     }
 
     /**
+     * Scope untuk menyaring dan mengecualikan rombel kelas mengulang.
+     */
+    public function scopeBukanMengulang($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('kelas')
+                ->orWhere(function ($sub) {
+                    $sub->where('kelas', 'not like', '%ulang%')
+                        ->where('kelas', 'not like', '%mengulang%');
+                });
+        })
+            ->where('kode_rombel', 'not like', '%-ulang%')
+            ->where('kode_rombel', 'not like', '%-mengulang%')
+            ->whereHas('mataKuliah', fn ($mk) => $mk->bukanMengulang());
+    }
+
+    /**
+     * Cek apakah rombel ini merupakan kelas mengulang.
+     */
+    public function getIsMengulangAttribute(): bool
+    {
+        $kelas = strtolower((string) ($this->kelas ?? ''));
+        $kode = strtolower((string) ($this->kode_rombel ?? ''));
+
+        return str_contains($kelas, 'ulang')
+            || str_contains($kode, '-ulang')
+            || str_contains($kode, '-mengulang')
+            || (bool) ($this->mataKuliah?->is_mengulang);
+    }
+
+    /**
      * Kode mata kuliah murni tanpa imbuhan kelas.
      */
     public function getCleanKodeMkAttribute(): string

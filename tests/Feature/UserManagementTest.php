@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Prodi;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -214,6 +215,29 @@ class UserManagementTest extends TestCase
             'id' => $target->id,
             'nama' => 'Revi Aedrian Updated',
             'role' => 'Fakultas',
+        ]);
+    }
+
+    public function test_update_user_with_role_prodi_persists_prodi_id(): void
+    {
+        $target = User::where('email', 'randtian@gmail.com')->firstOrFail();
+        $prodi = Prodi::first();
+
+        $response = $this->actingAs($this->admin())->put("/users/{$target->id}", [
+            'nama' => 'Revi Admin Prodi',
+            'email' => 'randtian@gmail.com',
+            'role' => 'Prodi',
+            'prodi_id' => $prodi->id,
+            'password' => '',
+            'password_confirmation' => '',
+        ]);
+
+        $response->assertSessionHas('flash_success', 'Data akun berhasil diperbarui!');
+        $this->assertDatabaseHas('users', [
+            'id' => $target->id,
+            'nama' => 'Revi Admin Prodi',
+            'role' => 'Prodi',
+            'prodi_id' => $prodi->id,
         ]);
     }
 

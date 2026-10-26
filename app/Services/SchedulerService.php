@@ -35,11 +35,11 @@ class SchedulerService
     public const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
     /** Jam mulai slot. Slot berikutnya selalu >= slot ini. */
-    public const SLOT_MULAI = ['07:30', '10:00', '13:00', '14:50'];
+    public const SLOT_MULAI = ['07:30', '10:00', '13:00', '14:50', '15:40'];
 
     public const PERIOD_SLOTS = [
         '07:30', '08:20', '09:10', '10:00', '10:50',
-        '13:00', '13:50', '14:40', '15:30', '16:20',
+        '13:00', '13:50', '14:40', '15:30', '15:40', '16:20',
     ];
 
     public const MAKS_PILIHAN = 2;
@@ -136,7 +136,8 @@ class SchedulerService
         $query = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
             ->where('semester', $semester)
             ->where('is_active', 1)
-            ->where('status_tawar', 1);
+            ->where('status_tawar', 1)
+            ->bukanMengulang();
 
         $this->applyProdiFilter($query, $prodi);
 
@@ -572,6 +573,7 @@ class SchedulerService
             600, // 10:00
             780, // 13:00
             890, // 14:50
+            940, // 15:40
             880, // 14:40
             500, // 08:20
             550, // 09:10
@@ -584,7 +586,7 @@ class SchedulerService
         $valid = [];
         foreach ($candidateMinutes as $start) {
             $end = $start + $durasi;
-            if ($end > 1080) { // maksimal jam 18:00
+            if ($end > 1110) { // maksimal hingga jam 18:30
                 continue;
             }
 
@@ -707,7 +709,13 @@ class SchedulerService
 
     protected function ruanganTersedia(MataKuliahDetail $mk, array $slot): Collection
     {
-        return Ruangan::where('is_active', 1)
+        $mkProdi = strtolower(trim((string) ($mk->prodi ?? '')));
+        $mkKode = strtoupper(trim((string) ($mk->kode_mk ?? '')));
+        $isInformatika = str_contains($mkProdi, 'informatik') || str_contains($mkProdi, 'tif') || str_contains($mkProdi, 'inf') || str_starts_with($mkKode, 'INF');
+        $isElektro = str_contains($mkProdi, 'elektro') || str_contains($mkProdi, 'eel') || str_contains($mkProdi, 'te') || str_starts_with($mkKode, 'EEL');
+
+        return Ruangan::with('prodi')
+            ->where('is_active', 1)
             ->where('kapasitas', '>=', $mk->kapasitas_per_kelas)
             ->when(
                 $mk->butuh_lab,
@@ -715,6 +723,59 @@ class SchedulerService
                 fn ($q) => $q->whereIn('tipe', ['Ruang Kelas', 'Aula', 'Auditorium'])
             )
             ->get()
+            ->filter(function (Ruangan $r) use ($isInformatika, $isElektro) {
+                $rKode = strtoupper(trim((string) $r->kode));
+                $rNama = strtolower(trim((string) $r->nama));
+                $rProdiNama = strtolower(trim((string) ($r->prodi?->nama ?? '')));
+
+                $rIsElektro = str_contains($rProdiNama, 'elektro')
+                    || str_starts_with($rKode, 'EL')
+                    || str_starts_with($rKode, 'TE')
+                    || str_starts_with($rKode, 'LAB-EL')
+                    || str_starts_with($rKode, 'LAB-EEL')
+                    || str_starts_with($rKode, 'LAB-TE')
+                    || str_starts_with($rKode, 'LAB EEL')
+                    || str_starts_with($rKode, 'LAB EL')
+                    || str_contains($rNama, 'elektro')
+                    || str_contains($rNama, 'eel');
+
+                $rIsInformatika = str_contains($rProdiNama, 'informatik')
+                    || str_starts_with($rKode, 'IF')
+                    || str_starts_with($rKode, 'TIF')
+                    || str_starts_with($rKode, 'LAB-IF')
+                    || str_starts_with($rKode, 'LAB-INF')
+                    || str_starts_with($rKode, 'LAB-KOM')
+                    || str_starts_with($rKode, 'LAB INF')
+                    || str_starts_with($rKode, 'LAB IF')
+                    || str_contains($rNama, 'informatik')
+                    || str_contains($rNama, 'inf')
+                    || str_contains($rNama, 'komputer');
+
+                // Jika ruangan khusus Elektro, jangan izinkan untuk mata kuliah Informatika
+                if ($rIsElektro && ! $isElektro) {
+                    return false;
+                }
+
+                // Jika ruangan khusus Informatika, jangan izinkan untuk mata kuliah Elektro
+                if ($rIsInformatika && ! $isInformatika) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->sortBy(function (Ruangan $r) use ($isInformatika, $isElektro) {
+                $rKode = strtoupper(trim((string) $r->kode));
+                $rNama = strtolower(trim((string) $r->nama));
+                // Prioritaskan ruangan khusus jurusan jika cocok, baru ruangan bersama
+                if ($isInformatika && ($r->prodi_id || str_contains($rKode, 'IF') || str_contains($rKode, 'INF') || str_contains($rNama, 'inf'))) {
+                    return 0;
+                }
+                if ($isElektro && ($r->prodi_id || str_contains($rKode, 'EL') || str_contains($rKode, 'EEL') || str_contains($rKode, 'TE') || str_contains($rNama, 'eel'))) {
+                    return 0;
+                }
+
+                return 1;
+            })
             ->reject(fn ($r) => $this->ruanganBentrok($r->id, $slot))
             ->values();
     }

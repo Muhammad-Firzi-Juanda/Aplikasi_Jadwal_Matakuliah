@@ -203,7 +203,7 @@ function togglePasswordVisibilityModal(fieldId, button) {
 
 
 /* ---------------------------------------------------------------
-   Flash Alert — auto-dismiss
+   Flash Alert ? auto-dismiss
    Semua elemen .flash-alert akan otomatis menghilang setelah
    beberapa detik dengan animasi smooth dan progress-bar countdown.
 --------------------------------------------------------------- */

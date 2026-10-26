@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ruangan extends Model
@@ -12,7 +13,12 @@ class Ruangan extends Model
 
     protected $table = 'ruangans';
 
-    protected $fillable = ['kode', 'nama', 'tipe', 'kapasitas', 'gedung', 'lantai', 'is_active'];
+    protected $fillable = ['kode', 'nama', 'tipe', 'prodi_id', 'kapasitas', 'gedung', 'lantai', 'is_active'];
+
+    public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(Prodi::class, 'prodi_id');
+    }
 
     public function jadwals(): HasMany
     {

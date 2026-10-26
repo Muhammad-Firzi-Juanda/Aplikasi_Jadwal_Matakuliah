@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/penjadwalan/import', [PenjadwalanController::class, 'import'])->name('penjadwalan.import');
         Route::delete('/penjadwalan/hapus-semua', [PenjadwalanController::class, 'destroyAll'])->name('penjadwalan.destroy-all');
         Route::post('/penjadwalan/clear-log', [PenjadwalanController::class, 'clearLog'])->name('penjadwalan.clear-log');
+        Route::post('/penjadwalan/mata-kuliah/{mataKuliah}/update-kuota', [PenjadwalanController::class, 'updateKuota'])->name('penjadwalan.update-kuota');
 
         // API Routes for Ruangan (AJAX)
         Route::get('/api/ruangan/{ruangan}', [RuanganController::class, 'show'])->name('api.ruangan.show');

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Dosen;
 use App\Models\MataKuliah;
 use App\Models\MataKuliahDetail;
+use App\Models\Prodi;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -675,6 +676,12 @@ class MataKuliahImportService
                 $catatan[] = 'Program studi tidak terdeteksi.';
             }
 
+            // 5. Cek Kelas Mengulang (untuk disembunyikan dari jadwal aktif)
+            $isMengulang = $this->isKelasMengulang($fullKodeMk, $kelasAsli, $data['nama_mk']);
+            if ($isMengulang) {
+                $catatan[] = 'Kelas mengulang (disimpan untuk rencana selanjutnya, disembunyikan dari penawaran aktif).';
+            }
+
             $counts['total']++;
             if ($status === 'dikenali') {
                 $counts['dikenali']++;
@@ -759,6 +766,23 @@ class MataKuliahImportService
     }
 
     /**
+     * Cek apakah data merupakan kelas mengulang yang perlu disembunyikan dari jadwal aktif.
+     */
+    public function isKelasMengulang(string $kodeMk, ?string $kelas = null, string $namaMk = ''): bool
+    {
+        $k = strtolower(trim((string) $kelas));
+        $kmk = strtolower(trim($kodeMk));
+        $nmk = strtolower(trim($namaMk));
+
+        return str_contains($k, 'ulang')
+            || str_contains($kmk, '-ulang')
+            || str_contains($kmk, '-mengulang')
+            || str_contains($nmk, 'mengulang')
+            || (bool) preg_match('/\(ulang\)/i', $nmk)
+            || (bool) preg_match('/\[ulang\]/i', $nmk);
+    }
+
+    /**
      * Impor data mata kuliah dari file spreadsheet atau array item yang telah diverifikasi.
      */
     public function import(string $path, array $mapping = [], array $defaults = [], array $verifiedItems = []): array
@@ -810,7 +834,13 @@ class MataKuliahImportService
 
             $baseKode = preg_replace('/-[A-Za-z0-9]+$/', '', $fullKode);
 
-            // 1. Simpan / Sinkronkan Master MK Tunggal (hindari duplikasi master untuk MK Universitas / Fakultas)
+            // 1. Resolve Prodi ID agar master MK terhubung ke prodi yang sesuai (bukan hardcoded 1)
+            $prodiRecord = Prodi::where('nama', $prodi)
+                ->orWhere('nama', 'like', "%{$prodi}%")
+                ->first();
+            $levelId = $prodiRecord?->id ?? 1;
+
+            // Simpan / Sinkronkan Master MK Tunggal (hindari duplikasi master untuk MK Universitas / Fakultas)
             $masterMk = MataKuliah::firstOrCreate(
                 ['kode' => $baseKode],
                 [
@@ -821,21 +851,37 @@ class MataKuliahImportService
                     'kategori' => $kategori,
                     'pemilik' => $pemilik,
                     'kurikulum' => '2024',
-                    'level_id' => 1,
+                    'level_id' => $levelId,
                 ]
             );
 
-            // Update master jika ada data kategori / pemilik yang belum terisi
-            if (! $masterMk->kategori || ! $masterMk->pemilik) {
-                $masterMk->update([
-                    'kategori' => $kategori,
-                    'pemilik' => $pemilik,
-                ]);
+            // Update master jika ada data kategori / pemilik / level_id yang belum terisi
+            $updateMaster = [];
+            if (! $masterMk->kategori) {
+                $updateMaster['kategori'] = $kategori;
+            }
+            if (! $masterMk->pemilik) {
+                $updateMaster['pemilik'] = $pemilik;
+            }
+            if ($masterMk->tipe === 'Prodi' && $masterMk->level_id === 1 && $levelId !== 1) {
+                $updateMaster['level_id'] = $levelId;
+            }
+            if (! empty($updateMaster)) {
+                $masterMk->update($updateMaster);
             }
 
             // 2. Resolve Dosen Pengampu
-            $dosenKetuaId = $this->resolveDosen($item['dosen_ketua'] ?? null, $prodi);
-            $dosenAnggotaId = $this->resolveDosen($item['dosen_anggota'] ?? null, $prodi);
+            $dosenKetuaRaw = $item['dosen_ketua'] ?? null;
+            $dosenAnggotaRaw = $item['dosen_anggota'] ?? null;
+
+            if (is_string($dosenKetuaRaw) && str_contains($dosenKetuaRaw, '/') && empty($dosenAnggotaRaw)) {
+                $slashParts = array_map('trim', explode('/', $dosenKetuaRaw));
+                $dosenKetuaRaw = $slashParts[0] ?? null;
+                $dosenAnggotaRaw = $slashParts[1] ?? null;
+            }
+
+            $dosenKetuaId = $this->resolveDosen($dosenKetuaRaw, $prodi);
+            $dosenAnggotaId = $this->resolveDosen($dosenAnggotaRaw, $prodi);
 
             if ($dosenKetuaId && $dosenKetuaId === $dosenAnggotaId) {
                 $dosenAnggotaId = null;
@@ -856,9 +902,9 @@ class MataKuliahImportService
                 'kapasitas_per_kelas' => isset($item['kapasitas_per_kelas']) ? max(10, min(200, (int) $item['kapasitas_per_kelas'])) : 40,
                 'butuh_lab' => (bool) ($item['butuh_lab'] ?? false),
                 'tanpa_ruangan' => (bool) ($item['tanpa_ruangan'] ?? false),
-                'status_verifikasi' => $item['status'] ?? 'dikenali',
-                'status_tawar' => true,
-                'is_active' => true,
+                'status_verifikasi' => $this->isKelasMengulang($fullKode, $kelas, $namaMk) ? 'mengulang' : ($item['status'] ?? 'dikenali'),
+                'status_tawar' => ! $this->isKelasMengulang($fullKode, $kelas, $namaMk),
+                'is_active' => ! $this->isKelasMengulang($fullKode, $kelas, $namaMk),
             ];
 
             $exists = MataKuliahDetail::where('kode_mk', $fullKode)->exists();
@@ -960,9 +1006,11 @@ class MataKuliahImportService
             $data['tipe'] = $defaultTipe;
         }
 
-        // Normalisasi Prodi
+        // Normalisasi Prodi secara cerdas berdasarkan kode MK, nama MK, atau fallback
         if (empty($data['prodi'])) {
-            $data['prodi'] = $defaultProdi;
+            $data['prodi'] = $this->detectProdiFromKodeOrNama((string) ($data['kode_mk'] ?? ''), $rawNama, $defaultProdi);
+        } else {
+            $data['prodi'] = $this->normalizeProdiName((string) $data['prodi']);
         }
 
         // Normalisasi Jumlah Kelas (mengutamakan total kemunculan baris kode_mk pada sheet jika ada kelas paralel)
@@ -985,7 +1033,7 @@ class MataKuliahImportService
 
         // Deteksi Kebutuhan Laboratorium secara cerdas dari kolom tipe/jenis atau nama mata kuliah
         $rawTipeOrJenis = (string) ($row[$headerMap['tipe'] ?? -1] ?? ($data['tipe'] ?? ''));
-        $isPraktikum = (bool) (preg_match('/(praktikum|lab|laboratorium)/i', $rawTipeOrJenis) || preg_match('/praktikum/i', $rawNama));
+        $isPraktikum = (bool) (preg_match('/(praktikum|praktik|prak\b|prak\.|lab|laboratorium)/i', $rawTipeOrJenis) || preg_match('/(praktikum|praktik|prak\b|prak\.|laboratorium)/i', $rawNama));
         $data['butuh_lab'] = $isPraktikum || $this->toBool($data['butuh_lab'] ?? null);
 
         // Deteksi Mata Kuliah Tanpa Ruangan Fisik (Skripsi, KKN, Kerja Praktik, Magang)
@@ -1044,6 +1092,12 @@ class MataKuliahImportService
 
         $value = trim((string) $value);
 
+        // Abaikan teks placeholder atau penanda non-dosen
+        $ignoreValues = ['pjmk', 'tba', '-', '--', 'none', 'null', 'belum ada', 'tim dosen', 'team teaching', 'dosen pengampu', 'n/a', 'belum ditentukan'];
+        if (in_array(strtolower($value), $ignoreValues, true)) {
+            return null;
+        }
+
         if (ctype_digit($value)) {
             $dosen = Dosen::find((int) $value);
             if ($dosen) {
@@ -1051,12 +1105,24 @@ class MataKuliahImportService
             }
         }
 
+        // 1. Pencarian nama persis
         $dosen = Dosen::where('nama', $value)->first();
         if ($dosen) {
             return $dosen->id;
         }
 
-        // Pencarian sebagian hanya jika panjang nama minimal 5 karakter agar inisial/kode dosen tidak bertabrakan
+        // 2. Pencarian berdasarkan inisial (misal 'FM', 'FC', 'MRR')
+        $cleanInisial = strtoupper(preg_replace('/[^a-zA-Z]/', '', $value));
+        if (strlen($cleanInisial) >= 2 && strlen($cleanInisial) <= 4) {
+            $dosenByInisial = Dosen::where('inisial', $cleanInisial)
+                ->when($prodi, fn ($q) => $q->orderByRaw('CASE WHEN prodi LIKE ? THEN 0 ELSE 1 END', ["%{$prodi}%"]))
+                ->first();
+            if ($dosenByInisial) {
+                return $dosenByInisial->id;
+            }
+        }
+
+        // 3. Pencarian sebagian hanya jika panjang nama minimal 5 karakter agar inisial/kode dosen tidak bertabrakan
         if (strlen($value) >= 5) {
             $dosen = Dosen::where('nama', 'like', '%'.$value.'%')->first();
             if ($dosen) {
@@ -1064,8 +1130,12 @@ class MataKuliahImportService
             }
         }
 
-        if ($dosen) {
-            return $dosen->id;
+        // 4. Jika ada slash (misal "Dosen A / Dosen B"), ambil nama pertama
+        if (str_contains($value, '/')) {
+            $parts = array_map('trim', explode('/', $value));
+            if (! empty($parts[0])) {
+                return $this->resolveDosen($parts[0], $prodi);
+            }
         }
 
         $created = Dosen::create([
@@ -1108,5 +1178,75 @@ class MataKuliahImportService
         $value = preg_replace('/\s+/', ' ', $value);
 
         return trim($value);
+    }
+
+    public function detectProdiFromKodeOrNama(string $kode, string $nama, string $defaultProdi = 'Informatika'): string
+    {
+        $kodeUpper = strtoupper(trim($kode));
+        $namaLower = strtolower(trim($nama));
+        $defaultLower = strtolower(trim($defaultProdi));
+
+        // Prefix Elektro (EEL, TE, TET, EL)
+        if (preg_match('/^(EEL|TE|TET|EL)/i', $kodeUpper) || str_contains($namaLower, 'elektro') || str_contains($namaLower, 'tenaga listrik') || str_contains($namaLower, 'telekomunikasi')) {
+            if (str_contains($defaultLower, 'elektro')) {
+                return $defaultProdi;
+            }
+
+            return 'Teknik Elektro';
+        }
+
+        // Prefix Informatika (INF, TIF, IF, KOM)
+        if (preg_match('/^(INF|TIF|IF|KOM)/i', $kodeUpper) || str_contains($namaLower, 'informatika') || str_contains($namaLower, 'komputer') || str_contains($namaLower, 'perangkat lunak')) {
+            if (str_contains($defaultLower, 'informatika')) {
+                return $defaultProdi;
+            }
+
+            return 'Teknik Informatika';
+        }
+
+        // Prefix Sistem Informasi (SI, TSI, SIF)
+        if (preg_match('/^(SI|TSI|SIF)/i', $kodeUpper) || str_contains($namaLower, 'sistem informasi')) {
+            if (str_contains($defaultLower, 'sistem informasi')) {
+                return $defaultProdi;
+            }
+
+            return 'Sistem Informasi';
+        }
+
+        // Prefix Teknik Industri (TI, TIN, IND)
+        if (preg_match('/^(TIN|IND)/i', $kodeUpper) || str_contains($namaLower, 'teknik industri')) {
+            if (str_contains($defaultLower, 'industri')) {
+                return $defaultProdi;
+            }
+
+            return 'Teknik Industri';
+        }
+
+        return $defaultProdi;
+    }
+
+    public function normalizeProdiName(string $prodi): string
+    {
+        $norm = strtolower(trim($prodi));
+        if ($norm === 'informatika' || $norm === 'teknik informatika') {
+            return $prodi;
+        }
+        if ($norm === 'elektro' || $norm === 'teknik elektro') {
+            return $prodi;
+        }
+        if (str_contains($norm, 'elektro')) {
+            return 'Teknik Elektro';
+        }
+        if (str_contains($norm, 'informatika')) {
+            return 'Teknik Informatika';
+        }
+        if (str_contains($norm, 'sistem informasi')) {
+            return 'Sistem Informasi';
+        }
+        if (str_contains($norm, 'industri')) {
+            return 'Teknik Industri';
+        }
+
+        return trim($prodi);
     }
 }

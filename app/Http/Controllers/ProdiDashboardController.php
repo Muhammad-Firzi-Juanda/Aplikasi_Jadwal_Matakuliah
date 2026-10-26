@@ -18,28 +18,27 @@ class ProdiDashboardController extends Controller
         $prodi = $user->prodi;
         $prodiName = $prodi?->nama ?? 'Teknik Informatika';
 
+        $scopeMk = function ($q) use ($prodiName) {
+            $q->where('prodi', 'like', "%{$prodiName}%")
+                ->orWhereIn('kategori', ['MK Universitas', 'MK Fakultas']);
+        };
+
         $stats = [
-            'total_dosen' => Dosen::where('prodi', $prodiName)->where('is_active', true)->count(),
-            'total_mata_kuliah' => MataKuliahDetail::where('prodi', $prodiName)->where('is_active', true)->count(),
-            'total_rombel' => Rombel::whereHas('mataKuliah', function ($q) use ($prodiName) {
-                $q->where('prodi', $prodiName);
-            })->count(),
-            'total_jadwal' => Jadwal::whereHas('rombel.mataKuliah', function ($q) use ($prodiName) {
-                $q->where('prodi', $prodiName);
-            })->where('is_active', true)->count(),
+            'total_dosen' => Dosen::where('prodi', 'like', "%{$prodiName}%")->where('is_active', true)->count(),
+            'total_mata_kuliah' => MataKuliahDetail::where($scopeMk)->where('is_active', true)->count(),
+            'total_rombel' => Rombel::whereHas('mataKuliah', $scopeMk)->count(),
+            'total_jadwal' => Jadwal::whereHas('rombel.mataKuliah', $scopeMk)->where('is_active', true)->count(),
         ];
 
-        $dosens = Dosen::where('prodi', $prodiName)->where('is_active', true)->orderBy('nama')->get();
+        $dosens = Dosen::where('prodi', 'like', "%{$prodiName}%")->where('is_active', true)->orderBy('nama')->get();
 
         $rombels = Rombel::with(['mataKuliah', 'dosenPengampu'])
-            ->whereHas('mataKuliah', function ($q) use ($prodiName) {
-                $q->where('prodi', $prodiName);
-            })
+            ->whereHas('mataKuliah', $scopeMk)
             ->orderBy('kode_rombel')
             ->get();
 
         $mataKuliahs = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
-            ->where('prodi', $prodiName)
+            ->where($scopeMk)
             ->where('is_active', true)
             ->orderBy('semester')
             ->orderBy('kode_mk')
@@ -47,9 +46,7 @@ class ProdiDashboardController extends Controller
             ->groupBy('semester');
 
         $jadwals = Jadwal::with(['rombel.mataKuliah', 'dosen', 'ruangan'])
-            ->whereHas('rombel.mataKuliah', function ($q) use ($prodiName) {
-                $q->where('prodi', $prodiName);
-            })
+            ->whereHas('rombel.mataKuliah', $scopeMk)
             ->where('is_active', true)
             ->orderBy('hari')
             ->orderBy('jam_mulai')

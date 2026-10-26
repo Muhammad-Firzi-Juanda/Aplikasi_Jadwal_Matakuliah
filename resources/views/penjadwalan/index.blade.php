@@ -1034,6 +1034,7 @@
                                 <th>Dosen Ketua</th>
                                 <th>Dosen Anggota</th>
                                 <th style="text-align:center;">Kelas</th>
+                                <th style="text-align:center;">Kuota</th>
                                 <th style="text-align:center;">Aksi</th>
                             </tr>
                         </thead>
@@ -1052,6 +1053,15 @@
                                             <span style="display:inline-block; padding:2px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-weight:700; font-size:0.8rem;">
                                                 {{ $mk->kelas_label }}
                                             </span>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <button type="button" class="btn-kuota-badge" 
+                                                onclick="openModalQuickKuota({{ $mk->id }}, '{{ $mk->clean_kode_mk }}', '{{ addslashes($mk->nama_mk) }}', {{ $mk->kapasitas_per_kelas ?? 40 }})" 
+                                                title="Klik untuk ubah kuota kelas ini"
+                                                style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; border-radius:14px; font-weight:700; font-size:0.82rem; cursor:pointer; transition:all 0.2s;">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                                {{ $mk->kapasitas_per_kelas ?? 40 }} Mhs
+                                            </button>
                                         </td>
                                         <td style="text-align:center;">
                                             @if (($userRole ?? '') === 'Prodi' && ! empty($userProdi) && stripos($mk->prodi, $userProdi) === false)
@@ -1083,7 +1093,7 @@
                                 @endforeach
                             @empty
                                 <tr>
-                                    <td colspan="9" style="text-align:center; padding:24px;">Belum ada mata kuliah.</td>
+                                    <td colspan="10" style="text-align:center; padding:24px;">Belum ada mata kuliah.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -1111,12 +1121,25 @@
                         </div>
                     </div>
 
+                    <div style="display:flex; align-items:center; gap:8px; margin: 15px 0 18px 0; flex-wrap:wrap; background:#f8fafc; padding:10px 14px; border-radius:10px; border:1px solid #e2e8f0;">
+                        <span style="font-size:12.5px; font-weight:700; color:#475569; display:inline-flex; align-items:center; gap:6px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Fokus Ruangan Jurusan:
+                        </span>
+                        <button type="button" class="btn-filter-ruangan active" onclick="filterTabelRuangan('all', this)" style="padding:5px 12px; border-radius:16px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #0860be; background:#0860be; color:#fff; transition:all 0.2s;">Semua Ruangan</button>
+                        <button type="button" class="btn-filter-ruangan" onclick="filterTabelRuangan('umum', this)" style="padding:5px 12px; border-radius:16px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #cbd5e1; background:#ffffff; color:#475569; transition:all 0.2s;">Ruangan Bersama / Umum</button>
+                        @foreach ($daftarProdi as $dp)
+                            <button type="button" class="btn-filter-ruangan" onclick="filterTabelRuangan('{{ $dp->id }}', this)" style="padding:5px 12px; border-radius:16px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #cbd5e1; background:#ffffff; color:#475569; transition:all 0.2s;">{{ $dp->nama }}{{ $dp->kode && !str_contains($dp->nama, '(') ? ' ('.$dp->kode.')' : '' }}</button>
+                        @endforeach
+                    </div>
+
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Kode Ruangan</th>
                                 <th>Nama Ruangan</th>
                                 <th>Tipe</th>
+                                <th>Peruntukan / Jurusan</th>
                                 <th>Kapasitas</th>
                                 <th>Gedung & Lantai</th>
                                 <th style="text-align:center;">Status</th>
@@ -1125,7 +1148,7 @@
                         </thead>
                         <tbody>
                             @forelse ($ruangans as $r)
-                                <tr>
+                                <tr class="ruangan-row" data-prodi-id="{{ $r->prodi_id ?? 'umum' }}">
                                     <td>
                                         <strong>{{ $r->kode }}</strong>
                                         @if ($r->isDefault())
@@ -1142,6 +1165,13 @@
                                             <span style="display: inline-block; padding: 3px 10px; background: #f3e8ff; color: #7e22ce; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Auditorium</span>
                                         @else
                                             <span style="display: inline-block; padding: 3px 10px; background: #fef3c7; color: #92400e; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">{{ $r->tipe }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($r->prodi)
+                                            <span style="display: inline-block; padding: 3px 10px; background: #ede9fe; color: #6d28d9; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">{{ $r->prodi->nama }}{{ $r->prodi->kode && !str_contains($r->prodi->nama, '(') ? ' ('.$r->prodi->kode.')' : '' }}</span>
+                                        @else
+                                            <span style="display: inline-block; padding: 3px 10px; background: #f1f5f9; color: #64748b; border-radius: 12px; font-size: 0.82rem; font-weight: 600;">Umum / Bersama</span>
                                         @endif
                                     </td>
                                     <td>{{ $r->kapasitas }} Kursi</td>
@@ -1196,7 +1226,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" style="text-align:center; padding:24px;">Belum ada data ruangan.</td>
+                                    <td colspan="8" style="text-align:center; padding:24px;">Belum ada data ruangan.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -1207,6 +1237,18 @@
                 <div class="tab-content" id="tab-generate">
                     <div class="tab-header">
                         <h2>Generate Jadwal</h2>
+                    </div>
+
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:flex-start; gap:12px;">
+                        <svg style="width:20px; height:20px; color:#16a34a; flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <div style="font-size:13px; color:#166534; line-height:1.5;">
+                            <strong>Alur Penjadwalan Bertahap:</strong>
+                            <ol style="margin:4px 0 0 16px; padding:0;">
+                                <li>Pastikan Data Program Studi & Ruangan telah terdaftar dengan benar.</li>
+                                <li>Input manual atau Import data mata kuliah untuk Program Studi tujuan.</li>
+                                <li>Pilih Program Studi dan parameter di bawah ini, lalu klik <strong>Generate Sekarang</strong>.</li>
+                            </ol>
+                        </div>
                     </div>
 
                     <form action="{{ route('penjadwalan.generate') }}" method="POST" id="formGenerate" class="generate-form">
@@ -1246,15 +1288,18 @@
                             <label class="generate-form-label label-input" for="genProdi">Program Studi</label>
                             <div class="generate-input-wrap">
                                 @if (($userRole ?? '') === 'Prodi')
-                                    <input type="text" id="genProdi" name="prodi" value="{{ $userProdi ?? 'Teknik Informatika' }}" readonly style="background:#f1f5f9; cursor:not-allowed; font-weight:600; padding:9px 14px; border:1.5px solid #cbd5e1; border-radius:8px; width:100%;" required>
-                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Terkunci khusus Program Studi Anda ({{ $userProdi ?? 'Teknik Informatika' }}).</span>
+                                    <input type="text" id="genProdi" name="prodi" value="{{ $userProdi ?? '' }}" readonly style="background:#f1f5f9; cursor:not-allowed; font-weight:600; padding:9px 14px; border:1.5px solid #cbd5e1; border-radius:8px; width:100%;" required>
+                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Terkunci khusus Program Studi Anda ({{ $userProdi ?? '-' }}).</span>
                                 @else
                                     <select id="genProdi" name="prodi" style="padding:9px 14px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.95rem; background:#ffffff; color:#1e293b; width:100%; cursor:pointer; font-weight:500;" required>
-                                        <option value="Teknik Informatika" selected>Teknik Informatika (TI) &mdash; Hanya mata kuliah TI</option>
-                                        <option value="Teknik Elektro">Teknik Elektro (TE) &mdash; Hanya mata kuliah Elektro</option>
                                         <option value="Semua">Semua Program Studi (Lintas Prodi)</option>
+                                        @forelse ($daftarProdi as $p)
+                                            <option value="{{ $p->nama }}">{{ $p->nama }} ({{ $p->kode ?? '-' }})</option>
+                                        @empty
+                                            <option value="" disabled>Belum ada data prodi &mdash; Buat data prodi terlebih dahulu</option>
+                                        @endforelse
                                     </select>
-                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Pilih prodi spesifik agar mata kuliah prodi lain tidak ikut di-generate.</span>
+                                    <span style="font-size:12px; color:#64748b; margin-top:4px; display:block;">Pilih prodi spesifik agar mata kuliah prodi lain tidak ikut di-generate. Data prodi dimuat bertahap dari master data.</span>
                                 @endif
                             </div>
                         </div>
@@ -1274,12 +1319,31 @@
                         <div class="generate-form-row">
                             <label class="generate-form-label">Jam tersedia</label>
                             <div class="generate-checkbox-grid">
-                                @foreach (['07:30', '10:00', '13:00', '14:50'] as $jam)
+                                @foreach (['07:30', '10:00', '13:00', '14:50', '15:40'] as $jam)
                                     <label class="generate-check-item">
                                         <input type="checkbox" name="jam_mulai[]" value="{{ $jam }}" checked>
                                         {{ $jam }}
                                     </label>
                                 @endforeach
+                            </div>
+                        </div>
+
+                        <div class="generate-form-row" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-top:10px;">
+                            <label class="generate-form-label" style="display:flex; align-items:center; gap:8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0860be" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                Kontrol Kuota Kelas
+                            </label>
+                            <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+                                <label style="display:inline-flex; align-items:center; gap:8px; font-size:0.92rem; font-weight:600; color:#1e293b; cursor:pointer;">
+                                    <input type="checkbox" id="checkOverrideKuota" name="override_kuota" value="1" onchange="toggleKuotaInput(this.checked)" style="width:17px; height:17px; accent-color:#0860be; cursor:pointer;">
+                                    Seragamkan kuota mahasiswa per kelas saat generate
+                                </label>
+                                <div id="wrapKuotaInput" style="display:none; align-items:center; gap:10px; margin-top:6px;">
+                                    <span style="font-size:0.88rem; color:#475569; font-weight:600;">Target Kuota per Kelas:</span>
+                                    <input type="number" name="kuota_per_kelas" id="inputKuotaGenerate" min="10" max="300" value="40" style="width:90px; padding:7px 10px; border:1.5px solid #cbd5e1; border-radius:6px; font-weight:700; text-align:center; font-size:1rem;">
+                                    <span style="font-size:0.85rem; color:#64748b;">Mahasiswa / rombel</span>
+                                </div>
+                                <span style="font-size:12px; color:#64748b;">Jika tidak dicentang, sistem otomatis menggunakan kuota bawaan masing-masing mata kuliah.</span>
                             </div>
                         </div>
 
@@ -1295,7 +1359,7 @@
                             <li>Dosen ketua tidak boleh bentrok di MK mana pun; kelas paralel dikRotate antar ketua/anggota.</li>
                             <li>Jadwal aktif yang sudah ada ikut dihitung: ruangan, dosen, dan cohort tidak ditimpa.</li>
                             <li>Hari/jam yang tidak dicentang tidak dipakai generate.</li>
-                            <li>Slot berurutan mulai 07:30, lalu 10:00, 13:00, 14:50. Durasi = SKS x 50 menit.</li>
+                            <li>Slot berurutan mulai 07:30, lalu 10:00, 13:00, 14:50, 15:40. Durasi = SKS x 50 menit.</li>
                             <li>MK Pilihan dibagi ke {{ $maksPilihan }} kelompok slot. MK satu kelompok saling bentrok; mahasiswa ambil 1 per kelompok (maks {{ $maksPilihan }} MK).</li>
                             <li>Ruang aktif saat ini:
                                 @foreach ($ruanganAktif as $r)
@@ -1697,8 +1761,8 @@
                                     <select id="filterProdiSelect" onchange="filterProdi(this.value)" 
                                         style="padding:7px 14px; border:1.5px solid #cbd5e1; border-radius:18px; font-size:0.9rem; outline:none; background:#ffffff; color:#1e293b; cursor:pointer; font-weight:600;">
                                         <option value="all">Semua Prodi</option>
-                                        <option value="Teknik Informatika">Teknik Informatika</option>
-                                        <option value="Teknik Elektro">Teknik Elektro</option>
+                                        <option value="Teknik Informatika">Teknik Informatika (INF)</option>
+                                        <option value="Teknik Elektro">Teknik Elektro (EEL)</option>
                                     </select>
                                 </div>
                             @endif
@@ -2031,6 +2095,19 @@
                 </div>
 
                 <div class="modal-form-row">
+                    <label for="ruanganProdiId">Peruntukan Jurusan</label>
+                    <div class="modal-input-container">
+                        <select id="ruanganProdiId" name="prodi_id">
+                            <option value="">Umum / Bersama (Semua Jurusan)</option>
+                            @foreach ($daftarProdi as $p)
+                                <option value="{{ $p->id }}">{{ $p->nama }} ({{ $p->kode ?? '-' }})</option>
+                            @endforeach
+                        </select>
+                        <small style="font-size:11.5px; color:#64748b; margin-top:4px; display:block;">Pilih jurusan jika ruangan/lab dikhususkan hanya untuk jurusan tersebut (misal Lab Elektro, Lab Komputer IF).</small>
+                    </div>
+                </div>
+
+                <div class="modal-form-row">
                     <label for="ruanganKapasitas">Kapasitas (Kursi)</label>
                     <div class="modal-input-container">
                         <input type="number" id="ruanganKapasitas" name="kapasitas" min="1" max="500" value="50" required>
@@ -2135,6 +2212,41 @@
         </div>
     </div>
 </div>
+
+{{-- ============ MODAL QUICK EDIT KUOTA ============ --}}
+<div class="modal-backdrop" id="modalQuickKuota">
+    <div class="modal-window" style="max-width: 480px;">
+        <div class="modal-header-blue">
+            <h3 style="display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Kontrol Kuota Mahasiswa
+            </h3>
+        </div>
+        <div class="modal-body">
+            <form id="formQuickKuota" method="POST" class="modal-form">
+                @csrf
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:16px;">
+                    <div style="font-weight:700; color:#0f172a; font-size:0.95rem;" id="quickKuotaKodeNama">-</div>
+                    <span style="font-size:12px; color:#64748b;">Atur kapasitas maksimal mahasiswa per kelas untuk mata kuliah ini.</span>
+                </div>
+
+                <div class="modal-form-row">
+                    <label for="inputQuickKuota">Kuota per Kelas</label>
+                    <div class="modal-input-container">
+                        <input type="number" id="inputQuickKuota" name="kapasitas_per_kelas" min="1" max="300" required style="font-size:1.1rem; font-weight:700; text-align:center;">
+                        <small style="font-size:11.5px; color:#64748b; margin-top:4px; display:block;">Jumlah kursi / daya tampung per rombel (contoh: 30, 40, atau 50 mahasiswa).</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer-buttons">
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal('modalQuickKuota')">Batal</button>
+                    <button type="submit" class="btn-modal-submit" style="background:#16a34a;">Simpan Kuota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -2143,6 +2255,21 @@ const MK_FORM_ACTION_STORE = "{{ route('penjadwalan.store') }}";
 const MK_FORM_ACTION_UPDATE = "{{ route('penjadwalan.update', ['mataKuliah' => '__ID__']) }}";
 const RUANGAN_FORM_ACTION_STORE = "{{ route('ruangan.store') }}";
 const RUANGAN_FORM_ACTION_UPDATE = "{{ route('ruangan.update', ['ruangan' => '__ID__']) }}";
+
+function openModalQuickKuota(id, kode, nama, kuotaSaatIni) {
+    document.getElementById('quickKuotaKodeNama').textContent = kode + ' - ' + nama;
+    document.getElementById('inputQuickKuota').value = kuotaSaatIni;
+    const form = document.getElementById('formQuickKuota');
+    form.action = "{{ url('/penjadwalan/mata-kuliah') }}/" + id + "/update-kuota";
+    openModal('modalQuickKuota');
+}
+
+function toggleKuotaInput(isChecked) {
+    const wrap = document.getElementById('wrapKuotaInput');
+    if (wrap) {
+        wrap.style.display = isChecked ? 'inline-flex' : 'none';
+    }
+}
 
 let currentPeriode = 'ganjil';
 
@@ -2244,10 +2371,10 @@ function filterProdi(val) {
         const rowProdi = (r.getAttribute('data-prodi') || '').toLowerCase();
         let show = true;
         if (filterLower !== 'all' && filterLower !== 'semua') {
-            if (filterLower.includes('informatika') || filterLower === 'ti') {
-                show = rowProdi.includes('informatika') && !rowProdi.includes('elektro');
-            } else if (filterLower.includes('elektro') || filterLower === 'te') {
-                show = rowProdi.includes('elektro') && !rowProdi.includes('informatika');
+            if (filterLower.includes('informatika') || filterLower.includes('inf') || filterLower === 'ti') {
+                show = rowProdi.includes('informatik') && !rowProdi.includes('elektro');
+            } else if (filterLower.includes('elektro') || filterLower.includes('eel') || filterLower === 'te') {
+                show = rowProdi.includes('elektro') && !rowProdi.includes('informatik');
             } else {
                 show = rowProdi.includes(filterLower);
             }
@@ -2400,6 +2527,9 @@ function openTambahRuangan() {
     document.getElementById('ruanganKapasitas').value = '40';
     document.getElementById('ruanganTipe').value = 'Ruang Kelas';
     document.getElementById('ruanganIsActive').value = '1';
+    if (document.getElementById('ruanganProdiId')) {
+        document.getElementById('ruanganProdiId').value = '';
+    }
     openModal('modalRuangan');
 }
 
@@ -2411,11 +2541,39 @@ function openEditRuangan(r) {
     document.getElementById('ruanganKode').value = r.kode;
     document.getElementById('ruanganNama').value = r.nama;
     document.getElementById('ruanganTipe').value = r.tipe;
+    if (document.getElementById('ruanganProdiId')) {
+        document.getElementById('ruanganProdiId').value = r.prodi_id || '';
+    }
     document.getElementById('ruanganKapasitas').value = r.kapasitas;
     document.getElementById('ruanganGedung').value = r.gedung || '';
     document.getElementById('ruanganLantai').value = r.lantai || '';
     document.getElementById('ruanganIsActive').value = r.is_active ? '1' : '0';
     openModal('modalRuangan');
+}
+
+// Filter tabel ruangan berdasarkan jurusan
+function filterTabelRuangan(prodiId, btn) {
+    document.querySelectorAll('.btn-filter-ruangan').forEach(b => {
+        b.style.background = '#ffffff';
+        b.style.color = '#475569';
+        b.style.borderColor = '#cbd5e1';
+    });
+    btn.style.background = '#0860be';
+    btn.style.color = '#ffffff';
+    btn.style.borderColor = '#0860be';
+
+    const rows = document.querySelectorAll('.ruangan-row');
+    rows.forEach(row => {
+        const rowProdiId = row.getAttribute('data-prodi-id');
+        if (prodiId === 'all') {
+            row.style.display = '';
+        } else if (prodiId === 'umum') {
+            row.style.display = (rowProdiId === 'umum' || !rowProdiId) ? '' : 'none';
+        } else {
+            // Tampilkan ruangan khusus prodi ini ATAU ruangan bersama
+            row.style.display = (rowProdiId === String(prodiId) || rowProdiId === 'umum' || !rowProdiId) ? '' : 'none';
+        }
+    });
 }
 
 function konfirmasiHapusRuangan(event, kode) {

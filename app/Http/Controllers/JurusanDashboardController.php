@@ -13,13 +13,13 @@ class JurusanDashboardController extends Controller
     public function index(): View
     {
         $stats = [
-            'total_dosen' => Dosen::count(),
-            'total_mata_kuliah' => MataKuliahDetail::count(),
+            'total_dosen' => Dosen::where('is_active', 1)->count(),
+            'total_mata_kuliah' => MataKuliahDetail::where('is_active', 1)->count(),
             'total_rombel' => Rombel::count(),
             'total_jadwal' => Jadwal::where('is_active', true)->count(),
         ];
 
-        $dosens = Dosen::orderBy('nama')->get();
+        $dosens = Dosen::where('is_active', 1)->orderBy('nama')->get();
         $mataKuliahs = MataKuliahDetail::with(['dosenKetua', 'dosenAnggota'])
             ->orderBy('semester')
             ->orderBy('kode_mk')

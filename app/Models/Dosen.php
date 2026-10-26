@@ -136,6 +136,11 @@ class Dosen extends Model
         return $this->hasMany(Jadwal::class);
     }
 
+    public function rombels(): HasMany
+    {
+        return $this->hasMany(Rombel::class, 'dosen_pengampu_id');
+    }
+
     public function rombelsKetua(): HasMany
     {
         return $this->hasMany(Rombel::class, 'dosen_pengampu_id')->where('peran_dosen', 'Ketua');

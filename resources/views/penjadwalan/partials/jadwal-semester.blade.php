@@ -96,12 +96,35 @@
                                                     {{ substr($j->jam_mulai, 0, 5) }} - {{ substr($j->jam_selesai, 0, 5) }}
                                                 </td>
                                                 <td style="white-space: nowrap;"><strong>{{ $cleanKodeMk }}</strong></td>
-                                                <td>{{ $j->nama_mk }}</td>
-                                                <td><span style="display: inline-block; padding: 2px 8px; background: #e2e8f0; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">{{ $j->sks }}</span></td>
+                                                @php
+                                                    $isPraktik = !empty($j->butuh_lab) 
+                                                        || stripos($j->nama_mk ?? '', 'prak') !== false 
+                                                        || stripos($j->nama_mk ?? '', 'lab') !== false 
+                                                        || ($j->tipe_ruangan ?? '') === 'Lab'
+                                                        || stripos($j->kode_ruangan ?? '', 'lab') !== false;
+                                                @endphp
                                                 <td>
+                                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                        <span style="font-weight: 600; color: #0f172a;">{{ $j->nama_mk }}</span>
+                                                        @if ($isPraktik)
+                                                            <span style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;" title="Kelas Praktik / Lab">
+                                                                Praktik
+                                                            </span>
+                                                        @else
+                                                            <span style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;" title="Kelas Teori">
+                                                                Teori
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td><span style="display: inline-block; padding: 2px 8px; background: #e2e8f0; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">{{ $j->sks }}</span></td>
+                                                <td style="text-align: center;">
                                                     <span style="display: inline-block; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">
                                                         {{ $kelasLabel }}
                                                     </span>
+                                                    <div style="font-size: 0.72rem; color: #15803d; font-weight: 600; margin-top: 2px;" title="Kuota Mahasiswa">
+                                                        {{ $j->rombel_kapasitas ?? $j->kapasitas_per_kelas ?? 40 }} Mhs
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <span title="{{ $j->nama_dosen ?? '-' }}" style="font-weight: 700; color: #1e3a5f; cursor: help; background: #f8fafc; padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; display: inline-block; border: 1px solid #cbd5e1;">
@@ -110,15 +133,43 @@
                                                 </td>
                                                 <td>
                                                     @if($j->kode_ruangan)
-                                                        <span style="display: inline-block; padding: 3px 8px; background: #ecfdf5; color: #047857; font-weight: 600; border-radius: 6px; font-size: 0.85rem;">{{ $j->kode_ruangan }}</span>
+                                                        @php
+                                                            $isLabRoom = stripos($j->kode_ruangan, 'lab') !== false || ($j->tipe_ruangan ?? '') === 'Lab';
+                                                            $roomKap = $j->kapasitas_ruangan ?? null;
+                                                            $classKap = $j->rombel_kapasitas ?? $j->kapasitas_per_kelas ?? null;
+                                                            $isOverload = $roomKap && $classKap && ($classKap > $roomKap);
+                                                        @endphp
+                                                        <span style="display: inline-block; padding: 3px 8px; {{ $isLabRoom ? 'background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;' : 'background: #ecfdf5; color: #047857;' }} font-weight: 600; border-radius: 6px; font-size: 0.85rem;" title="Kapasitas Ruangan: {{ $roomKap ?? '-' }} Kursi">
+                                                            {{ $j->kode_ruangan }}
+                                                        </span>
+                                                        @if ($roomKap)
+                                                            <div style="font-size: 10.5px; color: {{ $isOverload ? '#dc2626' : '#64748b' }}; font-weight: {{ $isOverload ? '700' : '500' }}; margin-top: 2px;">
+                                                                {{ $roomKap }} Kursi {{ $isOverload ? '⚠️' : '' }}
+                                                            </div>
+                                                        @endif
                                                     @else
                                                         <span style="color: #94a3b8; font-style: italic; font-size: 0.85rem;">-</span>
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; {{ str_contains(strtolower($j->prodi ?? ''), 'informatika') ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;' : 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;' }}">
-                                                        {{ $j->prodi ?? '-' }}
-                                                    </span>
+                                                    @php
+                                                        $jProdiLower = strtolower($j->prodi ?? '');
+                                                        $isElektro = str_contains($jProdiLower, 'elektro') || str_starts_with(strtoupper($cleanKodeMk), 'EEL');
+                                                        $isInformatika = str_contains($jProdiLower, 'informatik') || str_starts_with(strtoupper($cleanKodeMk), 'INF');
+                                                    @endphp
+                                                    @if ($isElektro)
+                                                        <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                                            Teknik Elektro (EEL)
+                                                        </span>
+                                                    @elseif ($isInformatika)
+                                                        <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                                            Teknik Informatika (INF)
+                                                        </span>
+                                                    @else
+                                                        <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">
+                                                            {{ $j->prodi ?? '-' }}
+                                                        </span>
+                                                    @endif
                                                 </td>
                                                 <td>
                                                     <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; {{ $j->tipe === 'Wajib' ? 'background: #eff6ff; color: #1d4ed8;' : 'background: #fef3c7; color: #b45309;' }}">

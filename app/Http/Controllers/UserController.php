@@ -45,9 +45,10 @@ class UserController extends Controller
             $query->where('role', '!=', UserRole::ADMIN);
         }
 
-        $users = $query->orderBy('id', 'asc')->get();
+        $users = $query->with('prodi')->orderBy('id', 'asc')->get();
+        $prodis = Prodi::orderBy('nama', 'asc')->get();
 
-        return view('admin.manajemen-akun', compact('users'));
+        return view('admin.manajemen-akun', compact('users', 'prodis'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -56,12 +57,14 @@ class UserController extends Controller
             'nama' => 'required|string|max:100',
             'email' => 'required|email|max:150|unique:users,email',
             'role' => ['required', Rule::in(UserRole::nonAdmin())],
+            'prodi_id' => ['nullable', 'exists:prodi,id'],
             'password' => 'required|min:6|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',
             'email.unique' => 'Email sudah terdaftar!',
             'role.required' => 'Role wajib dipilih!',
+            'prodi_id.exists' => 'Program Studi tidak valid!',
             'password.required' => 'Password wajib diisi!',
             'password.min' => 'Password minimal 6 karakter!',
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
@@ -75,6 +78,7 @@ class UserController extends Controller
             'nama' => trim($validated['nama']),
             'email' => trim($validated['email']),
             'role' => $validated['role'],
+            'prodi_id' => ($validated['role'] === UserRole::PRODI && ! empty($validated['prodi_id'])) ? (int) $validated['prodi_id'] : null,
             'password' => $validated['password'],
         ]);
 
@@ -104,12 +108,14 @@ class UserController extends Controller
             'nama' => 'required|string|max:100',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(UserRole::nonAdmin())],
+            'prodi_id' => ['nullable', 'exists:prodi,id'],
             'password' => 'nullable|min:6|confirmed',
         ], [
             'nama.required' => 'Nama wajib diisi!',
             'email.required' => 'Email wajib diisi!',
             'email.unique' => 'Email sudah digunakan oleh user lain!',
             'role.required' => 'Role wajib dipilih!',
+            'prodi_id.exists' => 'Program Studi tidak valid!',
             'password.min' => 'Password minimal 6 karakter!',
             'password.confirmed' => 'Konfirmasi password tidak cocok!',
         ]);
@@ -121,6 +127,7 @@ class UserController extends Controller
         $user->nama = trim($validated['nama']);
         $user->email = trim($validated['email']);
         $user->role = $validated['role'];
+        $user->prodi_id = ($validated['role'] === UserRole::PRODI && ! empty($validated['prodi_id'])) ? (int) $validated['prodi_id'] : null;
 
         if (! empty($validated['password'])) {
             $user->password = $validated['password'];

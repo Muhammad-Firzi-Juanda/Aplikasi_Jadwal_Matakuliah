@@ -31,7 +31,7 @@ class RuanganController extends Controller
      */
     public function show(Ruangan $ruangan): JsonResponse
     {
-        return response()->json($ruangan);
+        return response()->json($ruangan->load('prodi'));
     }
 
     /**
@@ -43,6 +43,7 @@ class RuanganController extends Controller
             'kode' => ['required', 'string', 'max:20', 'unique:ruangans,kode'],
             'nama' => ['required', 'string', 'max:100'],
             'tipe' => ['required', 'string', Rule::in(['Lab', 'Ruang Kelas', 'Aula', 'Auditorium', 'Lainnya'])],
+            'prodi_id' => ['nullable', 'integer', 'exists:prodi,id'],
             'kapasitas' => ['required', 'integer', 'min:1', 'max:500'],
             'gedung' => ['nullable', 'string', 'max:50'],
             'lantai' => ['nullable', 'string', 'max:10'],
@@ -55,6 +56,7 @@ class RuanganController extends Controller
             'kapasitas.required' => 'Kapasitas ruangan wajib diisi.',
         ]);
 
+        $validated['prodi_id'] = $request->filled('prodi_id') ? (int) $request->input('prodi_id') : null;
         $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : true;
 
         $ruangan = Ruangan::create($validated);
@@ -90,6 +92,7 @@ class RuanganController extends Controller
             'kode' => ['required', 'string', 'max:20', Rule::unique('ruangans', 'kode')->ignore($ruangan->id)],
             'nama' => ['required', 'string', 'max:100'],
             'tipe' => ['required', 'string', Rule::in(['Lab', 'Ruang Kelas', 'Aula', 'Auditorium', 'Lainnya'])],
+            'prodi_id' => ['nullable', 'integer', 'exists:prodi,id'],
             'kapasitas' => ['required', 'integer', 'min:1', 'max:500'],
             'gedung' => ['nullable', 'string', 'max:50'],
             'lantai' => ['nullable', 'string', 'max:10'],
@@ -102,6 +105,7 @@ class RuanganController extends Controller
             'kapasitas.required' => 'Kapasitas ruangan wajib diisi.',
         ]);
 
+        $validated['prodi_id'] = $request->filled('prodi_id') ? (int) $request->input('prodi_id') : null;
         $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : $ruangan->is_active;
 
         $ruangan->update($validated);

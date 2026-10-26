@@ -135,16 +135,25 @@
                             <tr>
                                 <td>{{ $u->nama }}</td>
                                 <td>{{ $u->email }}</td>
-                                <td>{{ $u->role }}</td>
+                                <td>
+                                    <span class="role-badge role-{{ strtolower(str_replace(' ', '-', $u->role)) }}">
+                                        {{ $u->role }}
+                                    </span>
+                                    @if ($u->role === 'Prodi' && $u->prodi)
+                                        <div style="font-size: 0.8rem; color: #0284c7; margin-top: 3px; font-weight: 600;">
+                                            {{ $u->prodi->nama }} ({{ $u->prodi->kode }})
+                                        </div>
+                                    @endif
+                                </td>
                                 <td>
                                     <div class="action-buttons-group">
                                         <button type="button" class="btn-action edit-btn" title="Edit Data Akun"
-                                            onclick="openEditModal({{ json_encode([
-                                                'id' => $u->id,
-                                                'nama' => $u->nama,
-                                                'email' => $u->email,
-                                                'role' => $u->role
-                                            ]) }})">
+                                            data-id="{{ $u->id }}"
+                                            data-nama="{{ $u->nama }}"
+                                            data-email="{{ $u->email }}"
+                                            data-role="{{ $u->role }}"
+                                            data-prodi-id="{{ $u->prodi_id ?? '' }}"
+                                            onclick="handleEditUserClick(this)">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -202,13 +211,25 @@
                 <div class="modal-form-row">
                     <label for="create_role">Role</label>
                     <div class="modal-input-container">
-                        <select id="create_role" name="role" required>
+                        <select id="create_role" name="role" required onchange="toggleProdiSelect('create')">
                             @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
                                 <option value="Admin">Admin</option>
                             @endif
                             <option value="Fakultas">Fakultas</option>
                             <option value="Jurusan">Jurusan</option>
                             <option value="Prodi">Prodi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-form-row" id="row_create_prodi" style="display: none;">
+                    <label for="create_prodi_id">Program Studi</label>
+                    <div class="modal-input-container">
+                        <select id="create_prodi_id" name="prodi_id">
+                            <option value="">-- Pilih Program Studi --</option>
+                            @foreach ($prodis ?? [] as $p)
+                                <option value="{{ $p->id }}">{{ $p->nama }} ({{ $p->kode }})</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -277,13 +298,25 @@
                 <div class="modal-form-row">
                     <label for="edit_role">Role</label>
                     <div class="modal-input-container">
-                        <select id="edit_role" name="role" required>
+                        <select id="edit_role" name="role" required onchange="toggleProdiSelect('edit')">
                             @if (Auth::user()->role === \App\Enums\UserRole::SUPER_ADMIN)
                                 <option value="Admin">Admin</option>
                             @endif
                             <option value="Fakultas">Fakultas</option>
                             <option value="Jurusan">Jurusan</option>
                             <option value="Prodi">Prodi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-form-row" id="row_edit_prodi" style="display: none;">
+                    <label for="edit_prodi_id">Program Studi</label>
+                    <div class="modal-input-container">
+                        <select id="edit_prodi_id" name="prodi_id">
+                            <option value="">-- Pilih Program Studi --</option>
+                            @foreach ($prodis ?? [] as $p)
+                                <option value="{{ $p->id }}">{{ $p->nama }} ({{ $p->kode }})</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -316,7 +349,7 @@
 
                 <div class="modal-footer-buttons">
                     <button type="button" class="btn-modal-cancel" onclick="closeModal('modalEdit')">Batal</button>
-                    <button type="submit" class="btn-modal-submit">Buat</button>
+                    <button type="submit" class="btn-modal-submit">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
@@ -411,52 +444,130 @@
     </div>
 </div>
 
+@endsection
+
+@push('scripts')
 <script>
 function openModal(modalId) {
-    document.getElementById(modalId).classList.add('show');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+    }
+    if (modalId === 'modalTambah') {
+        toggleProdiSelect('create');
+    }
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('show');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+function toggleProdiSelect(type) {
+    const roleSelect = document.getElementById(type + '_role');
+    const prodiRow = document.getElementById('row_' + type + '_prodi');
+    const prodiSelect = document.getElementById(type + '_prodi_id');
+    
+    if (roleSelect && prodiRow && prodiSelect) {
+        if (roleSelect.value === 'Prodi') {
+            prodiRow.style.display = 'flex';
+            prodiSelect.required = true;
+        } else {
+            prodiRow.style.display = 'none';
+            prodiSelect.required = false;
+            prodiSelect.value = '';
+        }
+    }
+}
+
+function handleEditUserClick(btn) {
+    const userData = {
+        id: btn.getAttribute('data-id'),
+        nama: btn.getAttribute('data-nama'),
+        email: btn.getAttribute('data-email'),
+        role: btn.getAttribute('data-role'),
+        prodi_id: btn.getAttribute('data-prodi-id')
+    };
+    openEditModal(userData);
 }
 
 function openEditModal(userData) {
-    if ("{{ Auth::user()->role }}" === "Admin" && userData.id == {{ Auth::id() }}) {
+    if (typeof userData === 'string') {
+        try {
+            userData = JSON.parse(userData);
+        } catch (e) {
+            console.error('Invalid user data', e);
+        }
+    }
+
+    if ("{{ Auth::user()->role }}" === "Admin" && userData && userData.id == {{ Auth::id() }}) {
         alert("Admin tidak dapat mengedit akun sendiri melalui tabel. Silakan gunakan menu Edit Profile di sidebar.");
         return;
     }
 
     const form = document.getElementById('formEditUser');
-    const baseUrl = form.getAttribute('data-base-url');
-    form.action = baseUrl + '/' + userData.id;
-    document.getElementById('edit_user_id').value = userData.id;
-    document.getElementById('edit_nama').value = userData.nama;
-    document.getElementById('edit_email').value = userData.email;
-    document.getElementById('edit_role').value = userData.role;
-    document.getElementById('edit_password').value = '';
-    document.getElementById('edit_password_confirmation').value = '';
+    if (form && userData && userData.id) {
+        const baseUrl = form.getAttribute('data-base-url') || '/users';
+        form.action = baseUrl.replace(/\/$/, '') + '/' + userData.id;
+    }
+    
+    const idEl = document.getElementById('edit_user_id');
+    if (idEl) idEl.value = (userData && userData.id) || '';
+    
+    const namaEl = document.getElementById('edit_nama');
+    if (namaEl) namaEl.value = (userData && userData.nama) || '';
+    
+    const emailEl = document.getElementById('edit_email');
+    if (emailEl) emailEl.value = (userData && userData.email) || '';
+    
+    const roleEl = document.getElementById('edit_role');
+    if (roleEl) roleEl.value = (userData && userData.role) || 'Prodi';
+    
+    const prodiSelect = document.getElementById('edit_prodi_id');
+    if (prodiSelect) {
+        prodiSelect.value = (userData && userData.prodi_id !== null && userData.prodi_id !== undefined && userData.prodi_id !== '') ? String(userData.prodi_id) : '';
+    }
+    
+    toggleProdiSelect('edit');
+    
+    const pwEl = document.getElementById('edit_password');
+    if (pwEl) pwEl.value = '';
+    
+    const pwConfEl = document.getElementById('edit_password_confirmation');
+    if (pwConfEl) pwConfEl.value = '';
+    
     openModal('modalEdit');
 }
 
 function openDeleteModal(userId) {
     const form = document.getElementById('formDeleteUser');
-    const baseUrl = form.getAttribute('data-base-url');
-    form.action = baseUrl + '/' + userId;
-    document.getElementById('delete_user_id').value = userId;
+    if (form && userId) {
+        const baseUrl = form.getAttribute('data-base-url') || '/users';
+        form.action = baseUrl.replace(/\/$/, '') + '/' + userId;
+    }
+    const input = document.getElementById('delete_user_id');
+    if (input) input.value = userId;
     openModal('modalHapus');
 }
 
 function togglePasswordVisibilityModal(fieldId, button) {
     const passwordInput = document.getElementById(fieldId);
+    if (!passwordInput) return;
     const eyeIcon = document.getElementById(fieldId + '_eye');
     
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        if (eyeIcon) {
+            eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        }
     } else {
         passwordInput.type = 'password';
-        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        if (eyeIcon) {
+            eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
     }
 }
 </script>
-@endsection
+@endpush
